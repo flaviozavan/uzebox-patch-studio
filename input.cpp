@@ -1,7 +1,6 @@
-#include <vector>
-#include <cstdint>
+#include <wx/vector.h>
 #include <regex>
-#include <string>
+#include <wx/string.h>
 #include <fstream>
 #include <streambuf>
 #include <sstream>
@@ -9,7 +8,7 @@
 #include <cstdint>
 #include "input.h"
 
-static void load_defines(std::map<std::string, uint8_t> &defines) {
+static void load_defines(std::map<wxString, long> &defines) {
   defines.clear();
 
   defines["WAVE_SINE"] = 0;
@@ -52,15 +51,15 @@ static void load_defines(std::map<std::string, uint8_t> &defines) {
   defines["PATCH_END"] = 15;
 }
 
-static long string_to_long(const std::string &str,
-    const std::map<std::string, uint8_t> &defines) {
+static long string_to_long(const wxString &str,
+    const std::map<wxString, long> &defines) {
   if (defines.find(str) != defines.end())
     return defines.find(str)->second;
   return strtol(str.c_str(), NULL, 0);
 }
 
-static bool read_vals_1d(const std::string &str, std::vector<long> &vals,
-    const std::map<std::string, uint8_t> &defines) {
+static bool read_vals_1d(const wxString &str, wxVector<long> &vals,
+    const std::map<wxString, long> &defines) {
   int depth = 0;
   std::string vstr;
   for (auto c : str) {
@@ -85,8 +84,8 @@ static bool read_vals_1d(const std::string &str, std::vector<long> &vals,
   return !vals.empty();
 }
 
-bool read_patches(const char *fn,
-    std::map<std::string, std::vector<long>> &data) {
+bool read_patches(const wxString &fn,
+    std::map<wxString, wxVector<long>> &data) {
   std::ifstream f(fn);
   if (!f.is_open())
     return false;
@@ -97,7 +96,7 @@ bool read_patches(const char *fn,
   std::regex white_space("[\t\n\r]");
   std::regex extra_space(" +");
   std::string clean_code, t;
-  std::map<std::string, uint8_t> defines;
+  std::map<wxString, long> defines;
 
   load_defines(defines);
 
@@ -127,7 +126,7 @@ bool read_patches(const char *fn,
         match, patch_declaration)) {
     search_start += match.position() + match.length();
 
-    std::vector<long> vals;
+    wxVector<long> vals;
     std::string varea(search_start, clean_code.cend());
     if (!read_vals_1d(varea, vals, defines))
       return false;

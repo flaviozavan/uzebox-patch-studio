@@ -11,7 +11,6 @@
 #include <wx/textfile.h>
 #include <algorithm>
 #include <map>
-#include <vector>
 #include "grid.h"
 #include "input.h"
 
@@ -625,7 +624,7 @@ void UPSFrame::on_open(wxCommandEvent &event) {
   if (file_dialog.ShowModal() == wxID_CANCEL)
     return;
 
-  std::map<std::string, std::vector<long>> patches;
+  std::map<wxString, wxVector<long>> patches;
   if (!read_patches(file_dialog.GetPath(), patches)) {
     SetStatusText(wxString::Format(_("Failed to open %s"),
           file_dialog.GetPath()));

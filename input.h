@@ -1,2 +1,2 @@
-bool read_patches(const char *fn,
-    std::map<std::string, std::vector<long>> &data);
+bool read_patches(const wxString &fn,
+    std::map<wxString, wxVector<long>> &data);
