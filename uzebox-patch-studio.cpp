@@ -27,6 +27,7 @@ class UPSApp: public wxApp {
 class UPSFrame: public wxFrame {
   public:
     UPSFrame(const wxString &title, const wxPoint &pos, const wxSize &size);
+    void open_file(const wxString &path);
 
   private:
     void on_new(wxCommandEvent &event);
@@ -60,6 +61,7 @@ class UPSFrame: public wxFrame {
     void read_patch_data(const wxTreeItemId &item);
     void update_patch_row_colors(int row);
     void save_to_file(const wxString &path);
+    void clear();
 
     wxRegEx valid_var_name;
     wxTreeItemId data_tree_root;
@@ -120,6 +122,11 @@ bool UPSApp::OnInit() {
   UPSFrame *frame = new UPSFrame(_("Uzebox Patch Studio"),
       wxPoint(50, 50), wxSize(600, 400));
   frame->Show(true);
+
+  if (argc > 1) {
+    frame->open_file(argv[1]);
+  }
+
   return true;
 }
 
@@ -283,11 +290,7 @@ void UPSFrame::on_about(wxCommandEvent &event) {
 void UPSFrame::on_new(wxCommandEvent &event) {
   (void) event;
 
-  data_tree->DeleteChildren(data_tree_patches);
-  data_tree->DeleteChildren(data_tree_structs);
-
-  top_sizer->Hide(1);
-  SetSizerAndFit(top_sizer);
+  clear();
 }
 
 void UPSFrame::on_data_tree_label_edit(wxTreeEvent &event) {
@@ -624,15 +627,18 @@ void UPSFrame::on_open(wxCommandEvent &event) {
   if (file_dialog.ShowModal() == wxID_CANCEL)
     return;
 
+  open_file(file_dialog.GetPath());
+}
+
+void UPSFrame::open_file(const wxString &path) {
   std::map<wxString, wxVector<long>> patches;
-  if (!read_patches(file_dialog.GetPath(), patches)) {
-    SetStatusText(wxString::Format(_("Failed to open %s"),
-          file_dialog.GetPath()));
+  if (!read_patches(path, patches)) {
+    SetStatusText(wxString::Format(_("Failed to open %s"), path));
     return;
   }
 
   /* Clean the data */
-  on_new(event);
+  clear();
 
   /* Add all the patches */
   for (auto &p : patches) {
@@ -655,5 +661,13 @@ void UPSFrame::on_open(wxCommandEvent &event) {
   }
 
   SetStatusText(wxString::Format(_("%s opened with %lu patches"),
-        file_dialog.GetPath(), patches.size()));
+        path, patches.size()));
+}
+
+void UPSFrame::clear() {
+  data_tree->DeleteChildren(data_tree_patches);
+  data_tree->DeleteChildren(data_tree_structs);
+
+  top_sizer->Hide(1);
+  SetSizerAndFit(top_sizer);
 }
