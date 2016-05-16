@@ -24,8 +24,7 @@ bool PatchData::play(bool loop) {
   stop();
   free_chunk();
 
-  if (generate_wave() && (wave = Mix_LoadWAV_RW(
-          SDL_RWFromMem(&(wave_data[0]), wave_data.size()), 0))) {
+  if (generate_wave() && (wave = Mix_QuickLoad_WAV(&(wave_data[0])))) {
     if (loop) {
       channel = Mix_PlayChannel(-1, wave, -1);
     }
