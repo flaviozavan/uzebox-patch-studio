@@ -684,6 +684,8 @@ void UPSFrame::open_file(const wxString &path) {
 
   SetStatusText(wxString::Format(_("%s opened with %lu patches"),
         path, patches.size()));
+
+  data_tree->ExpandAll();
 }
 
 void UPSFrame::clear() {
