@@ -157,24 +157,24 @@ bool generate_wave(const wxVector<long> &patch, wxVector<uint8_t> &data) {
 
       case PC_WAVE:
         wave = patch[i+2];
-	if (wave >= NUM_WAVES) {
-	  return false;
-	}
+        if (wave >= NUM_WAVES) {
+          return false;
+        }
         break;
 
       case PC_NOTE_UP:
         note += patch[i+2];
-	if (note > 126 || note < 0) {
-	  return false;
-	}
+        if (note > 126 || note < 0) {
+          return false;
+        }
         track_step = step_table[(int) note];
         break;
 
       case PC_NOTE_DOWN:
         note -= patch[i+2];
-	if (note > 126 || note < 0) {
-	  return false;
-	}
+        if (note > 126 || note < 0) {
+          return false;
+        }
         track_step = step_table[(int) note];
         break;
 
@@ -188,9 +188,9 @@ bool generate_wave(const wxVector<long> &patch, wxVector<uint8_t> &data) {
 
       case PC_PITCH:
         note = patch[i+2];
-	if (note > 126 || note < 0) {
-	  return false;
-	}
+        if (note > 126 || note < 0) {
+          return false;
+        }
         track_step = step_table[(int) note];
         sliding = false;
         break;
@@ -206,9 +206,9 @@ bool generate_wave(const wxVector<long> &patch, wxVector<uint8_t> &data) {
       case PC_SLIDE:
         current = step_table[(int) note];
         slide_note = note + patch[i+2];
-	if (slide_note > 126 || slide_note < 0) {
-	  return false;
-	}
+        if (slide_note > 126 || slide_note < 0) {
+          return false;
+        }
         target = step_table[(int) slide_note];
         slide_step = std::max(1, (target-current)/slide_speed);
         track_step += slide_step;
