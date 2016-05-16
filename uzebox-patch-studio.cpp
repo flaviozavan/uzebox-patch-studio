@@ -9,10 +9,14 @@
 #include <wx/artprov.h>
 #include <wx/filedlg.h>
 #include <wx/textfile.h>
+#include <wx/sound.h>
 #include <algorithm>
 #include <map>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 #include "grid.h"
 #include "input.h"
+#include "generate.h"
 
 class PatchData : public wxTreeItemData {
   public:
@@ -22,6 +26,7 @@ class PatchData : public wxTreeItemData {
 class UPSApp: public wxApp {
   public:
     virtual bool OnInit();
+    virtual int OnExit();
 };
 
 class UPSFrame: public wxFrame {
@@ -48,6 +53,7 @@ class UPSFrame: public wxFrame {
     void on_save_as(wxCommandEvent &event);
     void on_save(wxCommandEvent &event);
     void on_open(wxCommandEvent &event);
+    void on_play(wxCommandEvent &event);
 
     bool validate_var_name(const wxString &name);
 
@@ -71,6 +77,8 @@ class UPSFrame: public wxFrame {
     wxGrid *patch_grid;
     wxBoxSizer *top_sizer;
     wxString current_file_path;
+    wxVector<uint8_t> current_wave_data;
+    Mix_Chunk *current_wave = nullptr;
 
     static const std::map<wxString, std::pair<long, long>> limits;
     static const wxString command_choices[16];
@@ -115,10 +123,16 @@ wxBEGIN_EVENT_TABLE(UPSFrame, wxFrame)
   EVT_MENU(wxID_SAVEAS, UPSFrame::on_save_as)
   EVT_MENU(wxID_SAVE, UPSFrame::on_save)
   EVT_MENU(wxID_OPEN, UPSFrame::on_open)
+  EVT_MENU(ID_PLAY, UPSFrame::on_play)
 wxEND_EVENT_TABLE()
 wxIMPLEMENT_APP(UPSApp);
 
 bool UPSApp::OnInit() {
+  if (SDL_Init(SDL_INIT_AUDIO) == -1
+      || Mix_OpenAudio(SAMPLE_RATE, AUDIO_U8, 1, 4096) == -1) {
+    return false;
+  }
+
   UPSFrame *frame = new UPSFrame(_("Uzebox Patch Studio"),
       wxPoint(50, 50), wxSize(600, 400));
   frame->Show(true);
@@ -127,7 +141,15 @@ bool UPSApp::OnInit() {
     frame->open_file(argv[1]);
   }
 
+
   return true;
+}
+
+int UPSApp::OnExit() {
+  Mix_CloseAudio();
+  SDL_Quit();
+
+  return 0;
 }
 
 const std::map<wxString, std::pair<long, long>> UPSFrame::limits = {
@@ -670,4 +692,34 @@ void UPSFrame::clear() {
 
   top_sizer->Hide(1);
   SetSizerAndFit(top_sizer);
+}
+
+void UPSFrame::on_play(wxCommandEvent &event) {
+  (void) event;
+
+  auto item = data_tree->GetSelection();
+  if (item.IsOk() && data_tree->GetItemParent(item) == data_tree_patches) {
+    /* Force updates */
+    patch_grid->EnableEditing(false);
+    patch_grid->EnableEditing(true);
+
+    wxLog::AddTraceMask("sound");
+    auto data = (PatchData *) data_tree->GetItemData(item);
+    if (current_wave != nullptr) {
+      Mix_FreeChunk(current_wave);
+      current_wave = nullptr;
+    }
+    if (generate_wave(data->data, current_wave_data)
+        && (current_wave = Mix_LoadWAV_RW(SDL_RWFromMem(
+              &(current_wave_data[0]), current_wave_data.size()), 0))) {
+      Mix_PlayChannel(-1, current_wave, 0);
+
+      SetStatusText(wxString::Format(_("Playing %s"),
+            data_tree->GetItemText(item)));
+    }
+    else {
+      SetStatusText(wxString::Format(_("Failed to play %s"),
+            data_tree->GetItemText(item)));
+    }
+  }
 }
