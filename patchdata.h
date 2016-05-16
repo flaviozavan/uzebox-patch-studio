@@ -21,4 +21,23 @@
 #define PC_LOOP_END 14
 #define PATCH_END 15
 
-bool generate_wave(const wxVector<long> &patch, wxVector<uint8_t> &data);
+#define NUM_WAVES 10
+
+class PatchData : public wxTreeItemData {
+  public:
+    wxVector<long> data;
+
+    PatchData();
+    ~PatchData();
+    void stop();
+    bool play(bool loop=false);
+
+  private:
+    wxVector<uint8_t> wave_data;
+    Mix_Chunk *wave;
+    int channel;
+
+    void free_chunk();
+    void add_headers();
+    bool generate_wave();
+};

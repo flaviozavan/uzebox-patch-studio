@@ -16,12 +16,7 @@
 #include <SDL2/SDL_mixer.h>
 #include "grid.h"
 #include "input.h"
-#include "generate.h"
-
-class PatchData : public wxTreeItemData {
-  public:
-    wxVector<long> data;
-};
+#include "patchdata.h"
 
 class UPSApp: public wxApp {
   public:
@@ -54,6 +49,9 @@ class UPSFrame: public wxFrame {
     void on_save(wxCommandEvent &event);
     void on_open(wxCommandEvent &event);
     void on_play(wxCommandEvent &event);
+    void on_loop(wxCommandEvent &event);
+    void on_stop(wxCommandEvent &event);
+    void on_stop_all(wxCommandEvent &event);
 
     bool validate_var_name(const wxString &name);
 
@@ -77,8 +75,6 @@ class UPSFrame: public wxFrame {
     wxGrid *patch_grid;
     wxBoxSizer *top_sizer;
     wxString current_file_path;
-    wxVector<uint8_t> current_wave_data;
-    Mix_Chunk *current_wave = nullptr;
 
     static const std::map<wxString, std::pair<long, long>> limits;
     static const wxString command_choices[16];
@@ -91,6 +87,7 @@ enum {
   ID_PLAY = 1,
   ID_LOOP,
   ID_STOP,
+  ID_STOP_ALL,
   ID_DATA_TREE,
   ID_NEW_PATCH,
   ID_NEW_STRUCT,
@@ -124,6 +121,9 @@ wxBEGIN_EVENT_TABLE(UPSFrame, wxFrame)
   EVT_MENU(wxID_SAVE, UPSFrame::on_save)
   EVT_MENU(wxID_OPEN, UPSFrame::on_open)
   EVT_MENU(ID_PLAY, UPSFrame::on_play)
+  EVT_MENU(ID_LOOP, UPSFrame::on_loop)
+  EVT_MENU(ID_STOP, UPSFrame::on_stop)
+  EVT_MENU(ID_STOP_ALL, UPSFrame::on_stop_all)
 wxEND_EVENT_TABLE()
 wxIMPLEMENT_APP(UPSApp);
 
@@ -155,7 +155,7 @@ int UPSApp::OnExit() {
 const std::map<wxString, std::pair<long, long>> UPSFrame::limits = {
   {_("ENV_SPEED"), std::make_pair(-128, 127)},
   {_("NOISE_PARAMS"), std::make_pair(0, 127)},
-  {_("WAVE"), std::make_pair(0, 9)},
+  {_("WAVE"), std::make_pair(0, NUM_WAVES-1)},
   {_("NOTE_UP"), std::make_pair(0, 255)},
   {_("NOTE_DOWN"), std::make_pair(0, 255)},
   {_("NOTE_CUT"), std::make_pair(0, 0)},
@@ -231,6 +231,7 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
   toolbar->AddTool(ID_PLAY, _("Play"), wxNullBitmap);
   toolbar->AddTool(ID_LOOP, _("Loop"), wxNullBitmap);
   toolbar->AddTool(ID_STOP, _("Stop"), wxNullBitmap);
+  toolbar->AddTool(ID_STOP_ALL, _("Stop All"), wxNullBitmap);
   toolbar->Realize();
 
   CreateStatusBar();
@@ -705,17 +706,8 @@ void UPSFrame::on_play(wxCommandEvent &event) {
     patch_grid->EnableEditing(false);
     patch_grid->EnableEditing(true);
 
-    wxLog::AddTraceMask("sound");
     auto data = (PatchData *) data_tree->GetItemData(item);
-    if (current_wave != nullptr) {
-      Mix_FreeChunk(current_wave);
-      current_wave = nullptr;
-    }
-    if (generate_wave(data->data, current_wave_data)
-        && (current_wave = Mix_LoadWAV_RW(SDL_RWFromMem(
-              &(current_wave_data[0]), current_wave_data.size()), 0))) {
-      Mix_PlayChannel(-1, current_wave, 0);
-
+    if (data->play()) {
       SetStatusText(wxString::Format(_("Playing %s"),
             data_tree->GetItemText(item)));
     }
@@ -723,5 +715,49 @@ void UPSFrame::on_play(wxCommandEvent &event) {
       SetStatusText(wxString::Format(_("Failed to play %s"),
             data_tree->GetItemText(item)));
     }
+  }
+}
+
+void UPSFrame::on_loop(wxCommandEvent &event) {
+  (void) event;
+
+  auto item = data_tree->GetSelection();
+  if (item.IsOk() && data_tree->GetItemParent(item) == data_tree_patches) {
+    /* Force updates */
+    patch_grid->EnableEditing(false);
+    patch_grid->EnableEditing(true);
+
+    auto data = (PatchData *) data_tree->GetItemData(item);
+    if (data->play(true)) {
+      SetStatusText(wxString::Format(_("Looping %s"),
+            data_tree->GetItemText(item)));
+    }
+    else {
+      SetStatusText(wxString::Format(_("Looping to play %s"),
+            data_tree->GetItemText(item)));
+    }
+  }
+}
+
+void UPSFrame::on_stop(wxCommandEvent &event) {
+  (void) event;
+
+  auto item = data_tree->GetSelection();
+  if (item.IsOk() && data_tree->GetItemParent(item) == data_tree_patches) {
+    auto data = (PatchData *) data_tree->GetItemData(item);
+    data->stop();
+  }
+}
+
+void UPSFrame::on_stop_all(wxCommandEvent &event) {
+  (void) event;
+
+  wxTreeItemIdValue cookie;
+  auto item = data_tree->GetFirstChild(data_tree_patches, cookie);
+  while (item.IsOk()) {
+    auto data = (PatchData *) data_tree->GetItemData(item);
+    data->stop();
+
+    item = data_tree->GetNextChild(data_tree_patches, cookie);
   }
 }
