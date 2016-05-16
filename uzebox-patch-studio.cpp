@@ -731,9 +731,10 @@ void UPSFrame::on_loop(wxCommandEvent &event) {
     if (data->play(true)) {
       SetStatusText(wxString::Format(_("Looping %s"),
             data_tree->GetItemText(item)));
+      data_tree->SetItemBold(item);
     }
     else {
-      SetStatusText(wxString::Format(_("Looping to play %s"),
+      SetStatusText(wxString::Format(_("Failed to loop %s"),
             data_tree->GetItemText(item)));
     }
   }
@@ -746,6 +747,7 @@ void UPSFrame::on_stop(wxCommandEvent &event) {
   if (item.IsOk() && data_tree->GetItemParent(item) == data_tree_patches) {
     auto data = (PatchData *) data_tree->GetItemData(item);
     data->stop();
+    data_tree->SetItemBold(item, false);
   }
 }
 
@@ -757,7 +759,7 @@ void UPSFrame::on_stop_all(wxCommandEvent &event) {
   while (item.IsOk()) {
     auto data = (PatchData *) data_tree->GetItemData(item);
     data->stop();
-
+    data_tree->SetItemBold(item, false);
     item = data_tree->GetNextChild(data_tree_patches, cookie);
   }
 }
