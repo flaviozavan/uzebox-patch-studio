@@ -92,7 +92,8 @@ class UPSFrame: public wxFrame {
 
     static const std::map<wxString, std::pair<long, long>> limits;
     static const wxString command_choices[16];
-    static const std::set<wxString> type_choices;
+    static const wxString type_choices[3];
+    static const std::map<wxString, long> choice_values;
     static const std::map<wxString, long> command_ids;
 
     wxDECLARE_EVENT_TABLE();
@@ -206,10 +207,16 @@ const wxString UPSFrame::command_choices[16] = {
   _("PATCH_END"),
 };
 
-const std::set<wxString> UPSFrame::type_choices = {
+const wxString UPSFrame::type_choices[3] = {
   _("Wave"),
   _("Noise"),
   _("PCM"),
+};
+
+const std::map<wxString, long> UPSFrame::choice_values = {
+  {_("Wave"), 0},
+  {_("Noise"), 1},
+  {_("PCM"), 2},
 };
 
 const std::map<wxString, long> UPSFrame::command_ids = {
@@ -719,16 +726,39 @@ void UPSFrame::save_to_file(const wxString &path) {
           data_tree->GetItemText(item)));
 
     auto data = (PatchData *) data_tree->GetItemData(item);
-    if (data->data.empty())
+    if (data->data.empty()) {
       file.AddLine(wxT("  0, PC_PATCH_END, 0,"));
+    }
     for (size_t i = 0; i < data->data.size(); i += 3)
       file.AddLine(wxString::Format("  %ld, PC_%s, %ld,",
             data->data[i], command_choices[std::min(15l, data->data[i+1])],
             data->data[i+2]));
 
-    file.AddLine(wxT("}"));
+    file.AddLine(wxT("};"));
 
     item = data_tree->GetNextChild(data_tree_patches, cookie);
+  }
+
+  item = data_tree->GetFirstChild(data_tree_structs, cookie);
+  while (item.IsOk()) {
+    if (data_tree->IsSelected(item))
+      update_struct_data(item);
+
+    file.AddLine(wxString::Format("const struct PatchStruct %s[] PROGMEM = {",
+          data_tree->GetItemText(item)));
+
+    auto data = (StructData *) data_tree->GetItemData(item);
+    if (data->data.empty()) {
+      file.AddLine(wxT("  {0, NULL, NULL, 0, 0},"));
+    }
+    for (size_t i = 0; i < data->data.size(); i += 5)
+      file.AddLine(wxString::Format("  {%ld, %s, %s, %s, %s},",
+            choice_values.find(data->data[i])->second, data->data[i+1],
+            data->data[i+2], data->data[i+3], data->data[i+4]));
+
+    file.AddLine(wxT("};"));
+
+    item = data_tree->GetNextChild(data_tree_structs, cookie);
   }
 
   file.Write(wxTextFileType_Unix);
@@ -880,10 +910,8 @@ int UPSFrame::add_struct_command(const wxString &type, const wxString &pcm,
     struct_grid->InsertRows(pos);
   }
 
-  struct_grid->SetCellEditor(row_num, 0, new wxGridCellChoiceEditor(
-        type_choices.size(),
-        &(wxVector<wxString>(type_choices.begin(), type_choices.end()))[0],
-        false));
+  struct_grid->SetCellEditor(row_num, 0, new wxGridCellChoiceEditor(3,
+        type_choices, false));
   struct_grid->SetCellEditor(row_num, 2, new wxGridCellChoiceEditor(
         patch_names.size(),
         &(wxVector<wxString>(patch_names.begin(), patch_names.end()))[0],
