@@ -683,7 +683,8 @@ void UPSFrame::on_save(wxCommandEvent &event) {
 void UPSFrame::on_save_as(wxCommandEvent &event) {
   (void) event;
 
-  wxFileDialog file_dialog(this, _("Save"), wxEmptyString, _("patches.inc"),
+  wxFileDialog file_dialog(this, _("Save"), wxEmptyString,
+      current_file_path.IsEmpty()? _("patches.inc") : current_file_path,
       wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 
   if (file_dialog.ShowModal() == wxID_CANCEL)
@@ -694,10 +695,12 @@ void UPSFrame::on_save_as(wxCommandEvent &event) {
 
 void UPSFrame::save_to_file(const wxString &path) {
   wxTextFile file(path);
-  if (!file.Create())
-    file.Open();
-  if (!file.IsOpened())
+  file.Create();
+  file.Open();
+  if (!file.IsOpened()) {
+    SetStatusText(wxString::Format(_("Failed to write to %s"), path));
     return;
+  }
 
   /* This forces the cell that is being edited to update its value */
   patch_grid->EnableEditing(false);
@@ -732,6 +735,8 @@ void UPSFrame::save_to_file(const wxString &path) {
 
   SetStatusText(wxString::Format(_("%s written"), path));
   current_file_path = path;
+
+  SetTitle(wxString::Format(_("Uzebox Patch Studio - %s"), current_file_path));
 }
 
 void UPSFrame::on_open(wxCommandEvent &event) {
@@ -782,6 +787,9 @@ void UPSFrame::open_file(const wxString &path) {
         path, patches.size()));
 
   data_tree->ExpandAll();
+  current_file_path = path;
+
+  SetTitle(wxString::Format(_("Uzebox Patch Studio - %s"), current_file_path));
 }
 
 void UPSFrame::clear() {
