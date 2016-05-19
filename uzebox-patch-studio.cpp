@@ -12,11 +12,13 @@
 #include <wx/sound.h>
 #include <algorithm>
 #include <map>
+#include <set>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 #include "grid.h"
 #include "input.h"
 #include "patchdata.h"
+#include "structdata.h"
 
 class UPSApp: public wxApp {
   public:
@@ -61,11 +63,20 @@ class UPSFrame: public wxFrame {
         const wxString &command=command_choices[0],
         const wxString &param="0",
         int pos=-1);
+    int add_struct_command(const wxString &type=_("Wave"),
+        const wxString &pcm="NULL",
+        const wxString &patch=wxEmptyString,
+        const wxString &loop_start="0",
+        const wxString &loop_end="0",
+        int pos=-1);
     void update_patch_data(const wxTreeItemId &item);
     void read_patch_data(const wxTreeItemId &item);
     void update_patch_row_colors(int row);
     void save_to_file(const wxString &path);
     void clear();
+    void update_struct_row_colors(int row);
+    void update_struct_data(const wxTreeItemId &item);
+    void read_struct_data(const wxTreeItemId &item);
 
     wxRegEx valid_var_name;
     wxTreeItemId data_tree_root;
@@ -73,11 +84,15 @@ class UPSFrame: public wxFrame {
     wxTreeItemId data_tree_structs;
     wxTreeCtrl *data_tree;
     wxGrid *patch_grid;
+    wxGrid *struct_grid;
     wxBoxSizer *top_sizer;
+    wxBoxSizer *right_sizer;
     wxString current_file_path;
+    std::set<wxString> patch_names = {wxT("NULL")};
 
     static const std::map<wxString, std::pair<long, long>> limits;
     static const wxString command_choices[16];
+    static const std::set<wxString> type_choices;
     static const std::map<wxString, long> command_ids;
 
     wxDECLARE_EVENT_TABLE();
@@ -94,6 +109,7 @@ enum {
   ID_RENAME_DATA,
   ID_REMOVE_DATA,
   ID_PATCH_GRID,
+  ID_STRUCT_GRID,
   ID_NEW_COMMAND,
   ID_DELETE_COMMAND,
   ID_UP_COMMAND,
@@ -190,6 +206,12 @@ const wxString UPSFrame::command_choices[16] = {
   _("PATCH_END"),
 };
 
+const std::set<wxString> UPSFrame::type_choices = {
+  _("Wave"),
+  _("Noise"),
+  _("PCM"),
+};
+
 const std::map<wxString, long> UPSFrame::command_ids = {
   {_("ENV_SPEED"), 0},
   {_("NOISE_PARAMS"), 1},
@@ -248,7 +270,7 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
 
   top_sizer = new wxBoxSizer(wxHORIZONTAL);
   wxBoxSizer *left_sizer = new wxBoxSizer(wxVERTICAL);
-  wxBoxSizer *right_sizer = new wxBoxSizer(wxVERTICAL);
+  right_sizer = new wxBoxSizer(wxVERTICAL);
   wxBoxSizer *data_control_sizer = new wxBoxSizer(wxHORIZONTAL);
   wxBoxSizer *command_control_sizer = new wxBoxSizer(wxHORIZONTAL);
 
@@ -283,8 +305,25 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
   patch_grid->DisableDragRowSize();
   patch_grid->EnableDragColMove();
 
+  struct_grid = new UPSGrid(this, ID_STRUCT_GRID);
+  struct_grid->CreateGrid(0, 5, wxGrid::wxGridSelectRows);
+  struct_grid->SetColLabelValue(0, _("Type"));
+  struct_grid->SetColLabelValue(1, _("PCM Data"));
+  struct_grid->SetColLabelValue(2, _("Patch"));
+  struct_grid->SetColLabelValue(3, _("Loop Start"));
+  struct_grid->SetColLabelValue(4, _("Loop End"));
+  struct_grid->SetColFormatNumber(3);
+  struct_grid->SetColFormatNumber(4);
+  struct_grid->DisableDragColSize();
+  struct_grid->AutoSize();
+  struct_grid->SetColSize(0, struct_grid->GetColSize(0)*2);
+  struct_grid->SetColSize(2, struct_grid->GetColSize(2)*3);
+  struct_grid->DisableDragRowSize();
+  struct_grid->EnableDragColMove();
+
   right_sizer->Add(command_control_sizer, 0, wxEXPAND);
   right_sizer->Add(patch_grid, wxEXPAND, wxEXPAND);
+  right_sizer->Add(struct_grid, wxEXPAND, wxEXPAND);
 
   top_sizer->Add(left_sizer, wxEXPAND, wxEXPAND);
   top_sizer->Add(right_sizer, wxEXPAND, wxEXPAND);
@@ -333,13 +372,20 @@ void UPSFrame::on_data_tree_changed(wxTreeEvent &event) {
   }
   else if (old_item.IsOk()
       && data_tree->GetItemParent(old_item) == data_tree_structs) {
+    update_struct_data(old_item);
   }
 
   if (item.IsOk() && data_tree->GetItemParent(item) == data_tree_patches) {
     read_patch_data(item);
     top_sizer->Show(1, true);
+    right_sizer->Show(1, true);
+    right_sizer->Show(2, false);
   }
   else if (data_tree->GetItemParent(item) == data_tree_structs) {
+    read_struct_data(item);
+    top_sizer->Show(1, true);
+    right_sizer->Show(1, false);
+    right_sizer->Show(2, true);
   }
   SetSizerAndFit(top_sizer);
   patch_grid->EnableEditing(true);
@@ -349,6 +395,7 @@ void UPSFrame::on_new_patch(wxCommandEvent &event) {
   (void) event;
   wxString name = get_next_data_name(wxT("patch"));
   wxTreeItemId c = data_tree->AppendItem(data_tree_patches, name);
+  patch_names.insert(name);
   data_tree->SetItemData(c, new PatchData());
   data_tree->SelectItem(c);
   data_tree->EditLabel(c);
@@ -358,6 +405,7 @@ void UPSFrame::on_new_struct(wxCommandEvent &event) {
   (void) event;
   wxString name = get_next_data_name(wxT("patchstruct"));
   wxTreeItemId c = data_tree->AppendItem(data_tree_structs, name);
+  data_tree->SetItemData(c, new StructData());
   data_tree->SelectItem(c);
   data_tree->EditLabel(c);
 }
@@ -409,12 +457,21 @@ void UPSFrame::on_data_tree_label_edit_end(wxTreeEvent &event) {
   auto label = event.GetLabel();
 
   if (find_data(data_tree_root, label).IsOk()
-      || !validate_var_name(label))
+      || !validate_var_name(label)) {
     event.Veto();
+
+    return;
+  }
+
+  auto item = event.GetItem();
+  if (data_tree->GetItemParent(item) == data_tree_patches) {
+    patch_names.erase(data_tree->GetItemText(item));
+    patch_names.insert(label);
+  }
 }
 
 bool UPSFrame::validate_var_name(const wxString &name) {
-  return valid_var_name.Matches(name);
+  return name != wxT("NULL") && valid_var_name.Matches(name);
 }
 
 int UPSFrame::add_patch_command(const wxString &delay, const wxString &command,
@@ -433,9 +490,6 @@ int UPSFrame::add_patch_command(const wxString &delay, const wxString &command,
   patch_grid->SetCellValue(delay, row_num, 0);
   patch_grid->SetCellValue(command, row_num, 1);
   patch_grid->SetCellValue(param, row_num, 2);
-  patch_grid->SetCellBackgroundColour(row_num, 0, wxColour(0, 127, 0));
-  patch_grid->SetCellBackgroundColour(row_num, 1, wxColour(0, 127, 0));
-  patch_grid->SetCellBackgroundColour(row_num, 2, wxColour(0, 127, 0));
 
   update_patch_row_colors(row_num);
 
@@ -444,87 +498,126 @@ int UPSFrame::add_patch_command(const wxString &delay, const wxString &command,
 
 void UPSFrame::on_new_command(wxCommandEvent &event) {
   (void) event;
-  int row_num = add_patch_command();
-  patch_grid->GoToCell(row_num, 1);
+  /* Patch grid is at position 1 */
+  if (right_sizer->IsShown(1)) {
+    int row_num = add_patch_command();
+    patch_grid->GoToCell(row_num, 1);
+  }
+  else {
+    int row_num = add_struct_command();
+    struct_grid->GoToCell(row_num, 1);
+  }
 }
 
 void UPSFrame::on_delete_command(wxCommandEvent &event) {
   (void) event;
-  wxArrayInt selected = patch_grid->GetSelectedRows();
+  auto grid = right_sizer->IsShown(1)? patch_grid : struct_grid;
+  wxArrayInt selected = grid->GetSelectedRows();
   selected.Sort([] (int *a, int *b) { return (*b - *a); });
   for (auto row : selected)
-    patch_grid->DeleteRows(row);
+    grid->DeleteRows(row);
 }
 
 void UPSFrame::on_up_command(wxCommandEvent &event) {
   (void) event;
-  wxArrayInt selected = patch_grid->GetSelectedRows();
+  auto grid = right_sizer->IsShown(1)? patch_grid : struct_grid;
+  wxArrayInt selected = grid->GetSelectedRows();
   selected.Sort([] (int *a, int *b) { return (*a - *b); });
 
   /* This forces the cell that is being edited to update its value */
-  patch_grid->EnableEditing(false);
-  patch_grid->EnableEditing(true);
+  grid->EnableEditing(false);
+  grid->EnableEditing(true);
 
+  wxArrayString v;
+  v.Add(wxEmptyString, grid->GetNumberCols());
   for (int i = 0; i < (int) selected.GetCount(); i++) {
     int row = selected[i];
 
-    wxString delay = patch_grid->GetCellValue(row, 0);
-    wxString command = patch_grid->GetCellValue(row, 1);
-    wxString param = patch_grid->GetCellValue(row, 2);
+    for (size_t j = 0; j < v.GetCount(); j++) {
+      v[j] = grid->GetCellValue(row, j);
+    }
 
-    patch_grid->DeleteRows(row);
+    grid->DeleteRows(row);
     row = std::max(i, row-1);
-    add_patch_command(delay, command, param, row);
-    patch_grid->SelectRow(row, true);
+    if (grid == patch_grid) {
+      add_patch_command(v[0], v[1], v[2], row);
+    }
+    else {
+      add_struct_command(v[0], v[1], v[2], v[3], v[4], row);
+    }
+    grid->SelectRow(row, true);
   }
 }
 
 
 void UPSFrame::on_down_command(wxCommandEvent &event) {
   (void) event;
-  wxArrayInt selected = patch_grid->GetSelectedRows();
+  auto grid = right_sizer->IsShown(1)? patch_grid : struct_grid;
+  wxArrayInt selected = grid->GetSelectedRows();
   selected.Sort([] (int *a, int *b) { return (*b - *a); });
 
   /* This forces the cell that is being edited to update its value */
-  patch_grid->EnableEditing(false);
-  patch_grid->EnableEditing(true);
+  grid->EnableEditing(false);
+  grid->EnableEditing(true);
 
-  int last_row = patch_grid->GetNumberRows()-1;
+  int last_row = grid->GetNumberRows()-1;
+  wxArrayString v;
+  v.Add(wxEmptyString, grid->GetNumberCols());
   for (int i = 0; i < (int) selected.GetCount(); i++) {
     int row = selected[i];
 
-    wxString delay = patch_grid->GetCellValue(row, 0);
-    wxString command = patch_grid->GetCellValue(row, 1);
-    wxString param = patch_grid->GetCellValue(row, 2);
+    for (size_t j = 0; j < v.GetCount(); j++) {
+      v[j] = grid->GetCellValue(row, j);
+    }
 
-    patch_grid->DeleteRows(row);
+    grid->DeleteRows(row);
     row = std::min(last_row-i, row+1);
-    add_patch_command(delay, command, param, row);
-    patch_grid->SelectRow(row, true);
+    if (grid == patch_grid) {
+      add_patch_command(v[0], v[1], v[2], row);
+    }
+    else {
+      add_struct_command(v[0], v[1], v[2], v[3], v[4], row);
+    }
+    grid->SelectRow(row, true);
   }
 }
 
 void UPSFrame::on_clone_command(wxCommandEvent &event) {
   (void) event;
-  wxArrayInt selected = patch_grid->GetSelectedRows();
+  auto grid = right_sizer->IsShown(1)? patch_grid : struct_grid;
+  wxArrayInt selected = grid->GetSelectedRows();
   selected.Sort([] (int *a, int *b) { return (*a - *b); });
 
   /* This forces the cell that is being edited to update its value */
-  patch_grid->EnableEditing(false);
-  patch_grid->EnableEditing(true);
+  grid->EnableEditing(false);
+  grid->EnableEditing(true);
 
+  wxArrayString v;
+  v.Add(wxEmptyString, grid->GetNumberCols());
   for (int i = 0; i < (int) selected.GetCount(); i++) {
     int row = selected[i];
 
-    wxString delay = patch_grid->GetCellValue(row, 0);
-    wxString command = patch_grid->GetCellValue(row, 1);
-    wxString param = patch_grid->GetCellValue(row, 2);
-    add_patch_command(delay, command, param);
+    for (size_t j = 0; j < v.GetCount(); j++) {
+      v[j] = grid->GetCellValue(row, j);
+    }
+
+    if (grid == patch_grid) {
+      add_patch_command(v[0], v[1], v[2]);
+    }
+    else {
+      add_struct_command(v[0], v[1], v[2], v[3], v[4]);
+    }
   }
 }
 
 void UPSFrame::on_patch_cell_changed(wxGridEvent &event) {
-  update_patch_row_colors(event.GetRow());
+  /* Patch grid is at position 1 */
+  if (right_sizer->IsShown(1)) {
+    update_patch_row_colors(event.GetRow());
+  }
+  else {
+    update_struct_row_colors(event.GetRow());
+  }
 }
 
 void UPSFrame::update_patch_data(const wxTreeItemId &item) {
@@ -546,8 +639,9 @@ void UPSFrame::update_patch_data(const wxTreeItemId &item) {
 void UPSFrame::read_patch_data(const wxTreeItemId &item) {
   auto data = (PatchData *) data_tree->GetItemData(item);
 
-  if (patch_grid->GetNumberRows())
+  if (patch_grid->GetNumberRows()) {
     patch_grid->DeleteRows(0, patch_grid->GetNumberRows());
+  }
 
   for (size_t i = 0; i < data->data.size(); i += 3) {
     add_patch_command(wxString::Format(wxT("%ld"), data->data[i]),
@@ -667,6 +761,7 @@ void UPSFrame::open_file(const wxString &path) {
   for (auto &p : patches) {
     wxString name = get_next_data_name(p.first, true);
     wxTreeItemId c = data_tree->AppendItem(data_tree_patches, name);
+    patch_names.insert(name);
 
     PatchData *data = new PatchData();
 
@@ -761,5 +856,101 @@ void UPSFrame::on_stop_all(wxCommandEvent &event) {
     data->stop();
     data_tree->SetItemBold(item, false);
     item = data_tree->GetNextChild(data_tree_patches, cookie);
+  }
+}
+
+int UPSFrame::add_struct_command(const wxString &type, const wxString &pcm,
+    const wxString &patch, const wxString &loop_start,
+    const wxString &loop_end, int pos) {
+  int row_num;
+  if (pos == -1) {
+    row_num = struct_grid->GetNumberRows();
+    struct_grid->AppendRows();
+  }
+  else {
+    row_num = pos;
+    struct_grid->InsertRows(pos);
+  }
+
+  struct_grid->SetCellEditor(row_num, 0, new wxGridCellChoiceEditor(
+        type_choices.size(),
+        &(wxVector<wxString>(type_choices.begin(), type_choices.end()))[0],
+        false));
+  struct_grid->SetCellEditor(row_num, 2, new wxGridCellChoiceEditor(
+        patch_names.size(),
+        &(wxVector<wxString>(patch_names.begin(), patch_names.end()))[0],
+        true));
+  struct_grid->SetCellValue(type, row_num, 0);
+  struct_grid->SetCellValue(pcm, row_num, 1);
+  struct_grid->SetCellValue(patch == wxEmptyString && patch_names.size()?
+      *(patch_names.begin()) : patch, row_num, 2);
+  struct_grid->SetCellValue(loop_start, row_num, 3);
+  struct_grid->SetCellValue(loop_end, row_num, 4);
+
+  update_struct_row_colors(row_num);
+
+  return row_num;
+}
+
+void UPSFrame::update_struct_row_colors(int row) {
+  long loop_start, loop_end;
+  struct_grid->GetCellValue(row, 3).ToLong(&loop_start);
+  struct_grid->GetCellValue(row, 4).ToLong(&loop_end);
+
+  /* Type color is always green */
+  struct_grid->SetCellBackgroundColour(row, 0, wxColour(0, 127, 0));
+
+  auto pcm_data = struct_grid->GetCellValue(row, 1);
+  bool type_is_pcm = struct_grid->GetCellValue(row, 0) == _("PCM");
+  if (type_is_pcm) {
+    struct_grid->SetCellBackgroundColour(row, 1,
+        pcm_data == wxT("NULL")? wxColor(127, 0, 0) : wxColour(0, 127, 0));
+  }
+  else {
+    struct_grid->SetCellBackgroundColour(row, 1,
+        pcm_data != wxT("NULL")?  wxColor(127, 0, 0) : wxColour(0, 127, 0));
+  }
+
+  auto patch = struct_grid->GetCellValue(row, 2);
+  if (type_is_pcm) {
+    struct_grid->SetCellBackgroundColour(row, 2,
+        patch != wxT("NULL")? wxColor(127, 0, 0) : wxColour(0, 127, 0));
+  }
+  else {
+    struct_grid->SetCellBackgroundColour(row, 2,
+        patch == wxT("NULL") || patch_names.find(patch) == patch_names.end()?
+        wxColor(127, 0, 0) : wxColour(0, 127, 0));
+  }
+
+  /* 16 bit unsigned integers */
+  struct_grid->SetCellBackgroundColour(row, 3,
+      loop_start < 0 || loop_start >= 1<<16?
+      wxColor(127, 0, 0) : wxColour(0, 127, 0));
+  struct_grid->SetCellBackgroundColour(row, 4,
+      loop_end < 0 || loop_end >= 1<<16?
+      wxColor(127, 0, 0) : wxColour(0, 127, 0));
+}
+
+void UPSFrame::update_struct_data(const wxTreeItemId &item) {
+  auto data = (StructData *) data_tree->GetItemData(item);
+  data->data.clear();
+
+  for (int row = 0; row < struct_grid->GetNumberRows(); row++) {
+    for (int col = 0; col < 5; col++) {
+      data->data.push_back(struct_grid->GetCellValue(row, col));
+    }
+  }
+}
+
+void UPSFrame::read_struct_data(const wxTreeItemId &item) {
+  auto data = (StructData *) data_tree->GetItemData(item);
+
+  if (struct_grid->GetNumberRows()) {
+    struct_grid->DeleteRows(0, struct_grid->GetNumberRows());
+  }
+
+  for (size_t i = 0; i < data->data.size(); i += 5) {
+    add_struct_command(data->data[i], data->data[i+1],
+        data->data[i+2], data->data[i+3], data->data[i+4]);
   }
 }
