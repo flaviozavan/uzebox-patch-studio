@@ -54,6 +54,8 @@ const std::regex FileReader::white_space("[\t\n\r]");
 const std::regex FileReader::extra_space(" +");
 const std::regex FileReader::patch_declaration(
     "const char ([a-zA-Z_][a-zA-Z_0-9]*)\\[\\] PROGMEM ?= ?");
+const std::regex FileReader::struct_declaration(
+    "const struct PatchStruct ([a-zA-Z_][a-zA-Z_0-9]*)\\[\\] PROGMEM ?= ?");
 
 long FileReader::string_to_long(const wxString &str) {
   if (defines.find(str) != defines.end())
@@ -86,6 +88,32 @@ bool FileReader::read_patch_vals(const wxString &str, wxVector<long> &vals) {
   return !vals.empty();
 }
 
+bool FileReader::read_struct_vals(const wxString &str,
+    wxVector<wxString> &vals) {
+  int depth = 0;
+  std::string vstr;
+  for (auto c : str) {
+    if (c == '{')
+      depth++;
+    else if (c == '}') {
+      if (!depth)
+        return false;
+      else if ((!--depth))
+        break;
+    }
+    else if (c != ' ' && depth == 2)
+      vstr += c;
+  }
+
+  std::stringstream ss(vstr);
+  std::string item;
+  vals.clear();
+  while (std::getline(ss, item, ','))
+    vals.push_back(item);
+
+  return !vals.empty();
+}
+
 std::string FileReader::clean_code(const std::string &code) {
   std::string clean_code, t;
 
@@ -108,19 +136,13 @@ std::string FileReader::clean_code(const std::string &code) {
   return clean_code;
 }
 
-bool FileReader::read_patches(const wxString &fn,
+bool FileReader::read_patches(const std::string &clean_src,
     std::map<wxString, wxVector<long>> &data) {
-  std::ifstream f(fn);
-  if (!f.is_open())
-    return false;
-  std::string src((std::istreambuf_iterator<char>(f)),
-    std::istreambuf_iterator<char>());
-  std::string clean_src = clean_code(src);
-
-
-  /* Get all patches */
   std::smatch match;
   auto search_start = clean_src.cbegin();
+
+  data.clear();
+
   while (std::regex_search(search_start, clean_src.cend(),
         match, patch_declaration)) {
     search_start += match.position() + match.length();
@@ -133,4 +155,38 @@ bool FileReader::read_patches(const wxString &fn,
   }
 
   return true;
+}
+
+bool FileReader::read_structs(const std::string &clean_src,
+    std::map<wxString, wxVector<wxString>> &data) {
+  std::smatch match;
+  auto search_start = clean_src.cbegin();
+
+  data.clear();
+
+  while (std::regex_search(search_start, clean_src.cend(),
+        match, struct_declaration)) {
+    search_start += match.position() + match.length();
+
+    wxVector<wxString> vals;
+    std::string varea(search_start, clean_src.cend());
+    if (!read_struct_vals(varea, vals))
+      return false;
+    data[match[1].str()] = vals;
+  }
+
+  return true;
+}
+
+bool FileReader::read_patches_and_structs(const wxString &fn,
+    std::map<wxString, wxVector<long>> &patches,
+    std::map<wxString, wxVector<wxString>> &structs) {
+  std::ifstream f(fn);
+  if (!f.is_open())
+    return false;
+  std::string src((std::istreambuf_iterator<char>(f)),
+    std::istreambuf_iterator<char>());
+  std::string clean_src = clean_code(src);
+
+  return read_patches(clean_src, patches) && read_structs(clean_src, structs);
 }

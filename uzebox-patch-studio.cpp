@@ -785,7 +785,8 @@ void UPSFrame::on_open(wxCommandEvent &event) {
 
 void UPSFrame::open_file(const wxString &path) {
   std::map<wxString, wxVector<long>> patches;
-  if (!FileReader::read_patches(path, patches)) {
+  std::map<wxString, wxVector<wxString>> structs;
+  if (!FileReader::read_patches_and_structs(path, patches, structs)) {
     SetStatusText(wxString::Format(_("Failed to open %s"), path));
     return;
   }
@@ -813,9 +814,33 @@ void UPSFrame::open_file(const wxString &path) {
 
     data_tree->SetItemData(c, data);
   }
+  /* Add all the structs */
+  for (auto &s : structs) {
+    wxString name = get_next_data_name(s.first, true);
+    wxTreeItemId c = data_tree->AppendItem(data_tree_structs, name);
 
-  SetStatusText(wxString::Format(_("%s opened with %lu patches"),
-        path, patches.size()));
+    StructData *data = new StructData();
+
+    for (size_t i = 0; i < s.second.size(); i += 5) {
+      long type = strtol(s.second[i].c_str(), NULL, 0);
+      type = std::min(2l, std::max(0l, type));
+      data->data.push_back(type_choices[type]);
+
+      data->data.push_back(s.second[i+1]);
+      data->data.push_back(s.second[i+2]);
+
+      long loop_begin = strtol(s.second[i+3].c_str(), NULL, 0);
+      data->data.push_back(wxString::Format("%ld", loop_begin));
+      long loop_end = strtol(s.second[i+4].c_str(), NULL, 0);
+      data->data.push_back(wxString::Format("%ld", loop_end));
+    }
+
+    data_tree->SetItemData(c, data);
+  }
+
+  SetStatusText(wxString::Format(
+        _("%s opened with %lu patches and %lu structs"),
+        path, patches.size(), structs.size()));
 
   data_tree->ExpandAll();
   current_file_path = path;
