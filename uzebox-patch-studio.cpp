@@ -275,7 +275,6 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
   toolbar->Realize();
 
   CreateStatusBar();
-  SetStatusText(_("Uzebox Patch Studio"));
 
   data_tree = new wxTreeCtrl(this, ID_DATA_TREE, wxDefaultPosition,
       wxDefaultSize,
@@ -482,10 +481,14 @@ wxString UPSFrame::get_next_data_name(const wxString &base, bool try_bare) {
 void UPSFrame::on_data_tree_label_edit_end(wxTreeEvent &event) {
   auto label = event.GetLabel();
 
-  if (find_data(data_tree_root, label).IsOk()
-      || !validate_var_name(label)) {
+  if(!validate_var_name(label)) {
+    SetStatusText(_("Invalid variable name"));
     event.Veto();
-
+    return;
+  }
+  else if (find_data(data_tree_root, label).IsOk()) {
+    SetStatusText(_("Name already in use"));
+    event.Veto();
     return;
   }
 
