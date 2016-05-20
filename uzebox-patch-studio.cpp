@@ -347,6 +347,22 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
   top_sizer->Hide(1);
 
   SetSizerAndFit(top_sizer);
+
+  wxAcceleratorEntry accelerator_entries[] = {
+    wxAcceleratorEntry(wxACCEL_CTRL, WXK_RETURN, ID_PLAY),
+    wxAcceleratorEntry(wxACCEL_CTRL, (int) 'L', ID_LOOP),
+    wxAcceleratorEntry(wxACCEL_CTRL, (int) 'A', ID_STOP_ALL),
+    wxAcceleratorEntry(wxACCEL_CTRL, (int) 'T', ID_STOP),
+    wxAcceleratorEntry(wxACCEL_CTRL, (int) 'Y', ID_SYNC),
+    wxAcceleratorEntry(wxACCEL_CTRL, WXK_UP, ID_UP_COMMAND),
+    wxAcceleratorEntry(wxACCEL_CTRL, WXK_DOWN, ID_DOWN_COMMAND),
+    wxAcceleratorEntry(wxACCEL_CTRL, (int) 'C', ID_CLONE_COMMAND),
+    wxAcceleratorEntry(wxACCEL_CTRL, (int) 'P', ID_DELETE_COMMAND),
+    wxAcceleratorEntry(wxACCEL_CTRL, (int) 'D', ID_NEW_COMMAND),
+  };
+  SetAcceleratorTable(wxAcceleratorTable(
+        sizeof(accelerator_entries)/sizeof(wxAcceleratorEntry),
+        accelerator_entries));
 }
 
 void UPSFrame::on_exit(wxCommandEvent &event) {
