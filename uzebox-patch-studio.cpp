@@ -784,8 +784,8 @@ void UPSFrame::on_open(wxCommandEvent &event) {
 }
 
 void UPSFrame::open_file(const wxString &path) {
-  std::map<wxString, wxVector<long>> patches;
-  std::map<wxString, wxVector<wxString>> structs;
+  std::multimap<wxString, wxVector<long>> patches;
+  std::multimap<wxString, wxVector<wxString>> structs;
   if (!FileReader::read_patches_and_structs(path, patches, structs)) {
     SetStatusText(wxString::Format(_("Failed to open %s"), path));
     return;

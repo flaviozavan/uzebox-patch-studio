@@ -137,7 +137,7 @@ std::string FileReader::clean_code(const std::string &code) {
 }
 
 bool FileReader::read_patches(const std::string &clean_src,
-    std::map<wxString, wxVector<long>> &data) {
+    std::multimap<wxString, wxVector<long>> &data) {
   std::smatch match;
   auto search_start = clean_src.cbegin();
 
@@ -151,14 +151,14 @@ bool FileReader::read_patches(const std::string &clean_src,
     std::string varea(search_start, clean_src.cend());
     if (!read_patch_vals(varea, vals))
       return false;
-    data[match[1].str()] = vals;
+    data.emplace(match[1].str(), vals);
   }
 
   return true;
 }
 
 bool FileReader::read_structs(const std::string &clean_src,
-    std::map<wxString, wxVector<wxString>> &data) {
+    std::multimap<wxString, wxVector<wxString>> &data) {
   std::smatch match;
   auto search_start = clean_src.cbegin();
 
@@ -172,15 +172,15 @@ bool FileReader::read_structs(const std::string &clean_src,
     std::string varea(search_start, clean_src.cend());
     if (!read_struct_vals(varea, vals))
       return false;
-    data[match[1].str()] = vals;
+    data.emplace(match[1].str(), vals);
   }
 
   return true;
 }
 
 bool FileReader::read_patches_and_structs(const wxString &fn,
-    std::map<wxString, wxVector<long>> &patches,
-    std::map<wxString, wxVector<wxString>> &structs) {
+    std::multimap<wxString, wxVector<long>> &patches,
+    std::multimap<wxString, wxVector<wxString>> &structs) {
   std::ifstream f(fn);
   if (!f.is_open())
     return false;
