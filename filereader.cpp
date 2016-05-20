@@ -67,23 +67,30 @@ bool FileReader::read_patch_vals(const wxString &str, wxVector<long> &vals) {
   int depth = 0;
   std::string vstr;
   for (auto c : str) {
-    if (c == '{')
+    if (c == '{') {
       depth++;
-    else if (c == '}') {
-      if (!depth)
-        return false;
-      else if ((!--depth))
-        break;
     }
-    else if (c != ' ' && depth == 1)
+    else if (c == '}') {
+      if (!depth) {
+        return false;
+      }
+      else if (!(--depth)) {
+        break;
+      }
+    }
+    else if (c != ' ' && depth == 1) {
       vstr += c;
+    }
   }
 
   std::stringstream ss(vstr);
   std::string item;
   vals.clear();
-  while (std::getline(ss, item, ','))
-    vals.push_back(string_to_long(item));
+  while (std::getline(ss, item, ',')) {
+    if (!item.empty()) {
+      vals.push_back(string_to_long(item));
+    }
+  }
 
   return !vals.empty();
 }
@@ -93,23 +100,31 @@ bool FileReader::read_struct_vals(const wxString &str,
   int depth = 0;
   std::string vstr;
   for (auto c : str) {
-    if (c == '{')
+    if (c == '{') {
       depth++;
-    else if (c == '}') {
-      if (!depth)
-        return false;
-      else if ((!--depth))
-        break;
     }
-    else if (c != ' ' && depth == 2)
+    else if (c == '}') {
+      if (!depth) {
+        return false;
+      }
+      else if (!(--depth)) {
+        break;
+      }
+      else {
+        vstr += ',';
+      }
+    }
+    else if (c != ' ' && depth == 2) {
       vstr += c;
+    }
   }
 
   std::stringstream ss(vstr);
   std::string item;
   vals.clear();
-  while (std::getline(ss, item, ','))
+  while (std::getline(ss, item, ',')) {
     vals.push_back(item);
+  }
 
   return !vals.empty();
 }
