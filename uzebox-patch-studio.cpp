@@ -47,7 +47,7 @@ class UPSFrame: public wxFrame {
     void on_up_command(wxCommandEvent &event);
     void on_down_command(wxCommandEvent &event);
     void on_clone_command(wxCommandEvent &event);
-    void on_patch_cell_changed(wxGridEvent &event);
+    void on_cell_changed(wxGridEvent &event);
     void on_save_as(wxCommandEvent &event);
     void on_save(wxCommandEvent &event);
     void on_open(wxCommandEvent &event);
@@ -140,7 +140,7 @@ wxBEGIN_EVENT_TABLE(UPSFrame, wxFrame)
   EVT_BUTTON(ID_UP_COMMAND, UPSFrame::on_up_command)
   EVT_BUTTON(ID_DOWN_COMMAND, UPSFrame::on_down_command)
   EVT_BUTTON(ID_CLONE_COMMAND, UPSFrame::on_clone_command)
-  EVT_GRID_CELL_CHANGED(UPSFrame::on_patch_cell_changed)
+  EVT_GRID_CELL_CHANGED(UPSFrame::on_cell_changed)
   EVT_MENU(wxID_SAVEAS, UPSFrame::on_save_as)
   EVT_MENU(wxID_SAVE, UPSFrame::on_save)
   EVT_MENU(wxID_OPEN, UPSFrame::on_open)
@@ -552,7 +552,7 @@ void UPSFrame::on_new_command(wxCommandEvent &event) {
     int row_num = add_patch_command();
     patch_grid->GoToCell(row_num, 1);
   }
-  else {
+  else if (right_sizer->IsShown(2)) {
     int row_num = add_struct_command();
     struct_grid->GoToCell(row_num, 1);
   }
@@ -560,6 +560,10 @@ void UPSFrame::on_new_command(wxCommandEvent &event) {
 
 void UPSFrame::on_delete_command(wxCommandEvent &event) {
   (void) event;
+  if (!right_sizer->IsShown(1) && !right_sizer->IsShown(2)) {
+    return ;
+  }
+
   auto grid = right_sizer->IsShown(1)? patch_grid : struct_grid;
   wxArrayInt selected = grid->GetSelectedRows();
   selected.Sort([] (int *a, int *b) { return (*b - *a); });
@@ -569,6 +573,10 @@ void UPSFrame::on_delete_command(wxCommandEvent &event) {
 
 void UPSFrame::on_up_command(wxCommandEvent &event) {
   (void) event;
+  if (!right_sizer->IsShown(1) && !right_sizer->IsShown(2)) {
+    return ;
+  }
+
   auto grid = right_sizer->IsShown(1)? patch_grid : struct_grid;
   wxArrayInt selected = grid->GetSelectedRows();
   selected.Sort([] (int *a, int *b) { return (*a - *b); });
@@ -601,6 +609,10 @@ void UPSFrame::on_up_command(wxCommandEvent &event) {
 
 void UPSFrame::on_down_command(wxCommandEvent &event) {
   (void) event;
+  if (!right_sizer->IsShown(1) && !right_sizer->IsShown(2)) {
+    return ;
+  }
+
   auto grid = right_sizer->IsShown(1)? patch_grid : struct_grid;
   wxArrayInt selected = grid->GetSelectedRows();
   selected.Sort([] (int *a, int *b) { return (*b - *a); });
@@ -633,6 +645,10 @@ void UPSFrame::on_down_command(wxCommandEvent &event) {
 
 void UPSFrame::on_clone_command(wxCommandEvent &event) {
   (void) event;
+  if (!right_sizer->IsShown(1) && !right_sizer->IsShown(2)) {
+    return ;
+  }
+
   auto grid = right_sizer->IsShown(1)? patch_grid : struct_grid;
   wxArrayInt selected = grid->GetSelectedRows();
   selected.Sort([] (int *a, int *b) { return (*a - *b); });
@@ -659,12 +675,12 @@ void UPSFrame::on_clone_command(wxCommandEvent &event) {
   }
 }
 
-void UPSFrame::on_patch_cell_changed(wxGridEvent &event) {
+void UPSFrame::on_cell_changed(wxGridEvent &event) {
   /* Patch grid is at position 1 */
   if (right_sizer->IsShown(1)) {
     update_patch_row_colors(event.GetRow());
   }
-  else {
+  else if (right_sizer->IsShown(2)) {
     update_struct_row_colors(event.GetRow());
   }
 }
