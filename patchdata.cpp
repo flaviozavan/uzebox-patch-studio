@@ -45,6 +45,12 @@ bool PatchData::play(bool loop) {
   return true;
 }
 
+void PatchData::retrigger() {
+  if (channel != -1) {
+    Mix_PlayChannel(channel, wave, -1);
+  }
+}
+
 void PatchData::free_chunk() {
   if (wave != nullptr) {
     Mix_FreeChunk(wave);

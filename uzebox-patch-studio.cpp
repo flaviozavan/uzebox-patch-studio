@@ -57,6 +57,7 @@ class UPSFrame: public wxFrame {
     void on_stop_all(wxCommandEvent &event);
     void on_remove(wxCommandEvent &event);
     void on_clone_data(wxCommandEvent &event);
+    void on_sync(wxCommandEvent &event);
 
     bool validate_var_name(const wxString &name);
 
@@ -108,6 +109,7 @@ enum {
   ID_LOOP,
   ID_STOP,
   ID_STOP_ALL,
+  ID_SYNC,
   ID_DATA_TREE,
   ID_NEW_PATCH,
   ID_NEW_STRUCT,
@@ -146,6 +148,7 @@ wxBEGIN_EVENT_TABLE(UPSFrame, wxFrame)
   EVT_MENU(ID_LOOP, UPSFrame::on_loop)
   EVT_MENU(ID_STOP, UPSFrame::on_stop)
   EVT_MENU(ID_STOP_ALL, UPSFrame::on_stop_all)
+  EVT_MENU(ID_SYNC, UPSFrame::on_sync)
   EVT_BUTTON(ID_REMOVE_DATA, UPSFrame::on_remove)
   EVT_BUTTON(ID_CLONE_DATA, UPSFrame::on_clone_data)
 wxEND_EVENT_TABLE()
@@ -268,6 +271,7 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
   toolbar->AddTool(ID_LOOP, _("Loop"), wxNullBitmap);
   toolbar->AddTool(ID_STOP, _("Stop"), wxNullBitmap);
   toolbar->AddTool(ID_STOP_ALL, _("Stop All"), wxNullBitmap);
+  toolbar->AddTool(ID_SYNC, _("Sync Loops"), wxNullBitmap);
   toolbar->Realize();
 
   CreateStatusBar();
@@ -1083,5 +1087,17 @@ void UPSFrame::on_clone_data(wxCommandEvent &event) {
   else if (parent == data_tree_structs) {
     data_tree->SetItemData(c,
         new StructData((StructData *) data_tree->GetItemData(item)));
+  }
+}
+
+void UPSFrame::on_sync(wxCommandEvent &event) {
+  (void) event;
+
+  wxTreeItemIdValue cookie;
+  auto item = data_tree->GetFirstChild(data_tree_patches, cookie);
+  while (item.IsOk()) {
+    auto data = (PatchData *) data_tree->GetItemData(item);
+    data->retrigger();
+    item = data_tree->GetNextChild(data_tree_patches, cookie);
   }
 }
