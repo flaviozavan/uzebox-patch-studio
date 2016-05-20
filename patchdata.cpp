@@ -8,6 +8,12 @@
 PatchData::PatchData() : wave(nullptr), channel(-1) {
 };
 
+PatchData::PatchData(const PatchData *p) :
+  data(p->data),
+  wave(nullptr),
+  channel(-1) {
+}
+
 PatchData::~PatchData() {
   stop();
   free_chunk();

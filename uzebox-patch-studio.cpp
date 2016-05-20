@@ -56,6 +56,7 @@ class UPSFrame: public wxFrame {
     void on_stop(wxCommandEvent &event);
     void on_stop_all(wxCommandEvent &event);
     void on_remove(wxCommandEvent &event);
+    void on_clone_data(wxCommandEvent &event);
 
     bool validate_var_name(const wxString &name);
 
@@ -112,6 +113,7 @@ enum {
   ID_NEW_STRUCT,
   ID_RENAME_DATA,
   ID_REMOVE_DATA,
+  ID_CLONE_DATA,
   ID_PATCH_GRID,
   ID_STRUCT_GRID,
   ID_NEW_COMMAND,
@@ -145,6 +147,7 @@ wxBEGIN_EVENT_TABLE(UPSFrame, wxFrame)
   EVT_MENU(ID_STOP, UPSFrame::on_stop)
   EVT_MENU(ID_STOP_ALL, UPSFrame::on_stop_all)
   EVT_BUTTON(ID_REMOVE_DATA, UPSFrame::on_remove)
+  EVT_BUTTON(ID_CLONE_DATA, UPSFrame::on_clone_data)
 wxEND_EVENT_TABLE()
 wxIMPLEMENT_APP(UPSApp);
 
@@ -289,6 +292,7 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
   data_control_sizer->Add(new wxButton(this, ID_NEW_STRUCT, _("New Struct")));
   data_control_sizer->Add(new wxButton(this, ID_RENAME_DATA, _("Rename")));
   data_control_sizer->Add(new wxButton(this, ID_REMOVE_DATA, _("Remove")));
+  data_control_sizer->Add(new wxButton(this, ID_CLONE_DATA, _("Clone")));
 
   left_sizer->Add(data_control_sizer, 0, wxEXPAND);
   left_sizer->Add(data_tree, wxEXPAND, wxEXPAND);
@@ -1055,5 +1059,29 @@ void UPSFrame::on_remove(wxCommandEvent &event) {
 
   if (parent != data_tree_root) {
     data_tree->Delete(item);
+  }
+}
+
+void UPSFrame::on_clone_data(wxCommandEvent &event) {
+  (void) event;
+  auto item = data_tree->GetSelection();
+  if (!item.IsOk()) {
+    return;
+  }
+
+  auto parent = data_tree->GetItemParent(item);
+  if (parent == data_tree_root) {
+    return;
+  }
+
+  auto name = get_next_data_name(data_tree->GetItemText(item));
+  auto c = data_tree->AppendItem(parent, name);
+  if (parent == data_tree_patches) {
+    data_tree->SetItemData(c,
+        new PatchData((PatchData *) data_tree->GetItemData(item)));
+  }
+  else if (parent == data_tree_structs) {
+    data_tree->SetItemData(c,
+        new StructData((StructData *) data_tree->GetItemData(item)));
   }
 }

@@ -28,6 +28,7 @@ class PatchData : public wxTreeItemData {
     wxVector<long> data;
 
     PatchData();
+    PatchData(const PatchData *p);
     ~PatchData();
     void stop();
     bool play(bool loop=false);
