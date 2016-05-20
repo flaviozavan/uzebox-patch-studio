@@ -78,6 +78,7 @@ class UPSFrame: public wxFrame {
     void update_struct_row_colors(int row);
     void update_struct_data(const wxTreeItemId &item);
     void read_struct_data(const wxTreeItemId &item);
+    void replace_patch_in_structs(const wxString &src, const wxString &dst);
 
     wxRegEx valid_var_name;
     wxTreeItemId data_tree_root;
@@ -372,6 +373,7 @@ void UPSFrame::on_data_tree_changed(wxTreeEvent &event) {
   auto old_item = event.GetOldItem();
 
   patch_grid->EnableEditing(false);
+  struct_grid->EnableEditing(false);
   if (old_item.IsOk()
       && data_tree->GetItemParent(old_item) == data_tree_patches) {
     update_patch_data(old_item);
@@ -381,20 +383,25 @@ void UPSFrame::on_data_tree_changed(wxTreeEvent &event) {
     update_struct_data(old_item);
   }
 
-  if (item.IsOk() && data_tree->GetItemParent(item) == data_tree_patches) {
-    read_patch_data(item);
-    top_sizer->Show(1, true);
-    right_sizer->Show(1, true);
-    right_sizer->Show(2, false);
+  if (item.IsOk()) {
+    auto parent = data_tree->GetItemParent(item);
+    if (parent == data_tree_patches) {
+      read_patch_data(item);
+      top_sizer->Show(1, true);
+      right_sizer->Show(1, true);
+      right_sizer->Show(2, false);
+    }
+    else if (parent == data_tree_structs) {
+      read_struct_data(item);
+      top_sizer->Show(1, true);
+      right_sizer->Show(1, false);
+      right_sizer->Show(2, true);
+    }
+
+    SetSizerAndFit(top_sizer);
   }
-  else if (data_tree->GetItemParent(item) == data_tree_structs) {
-    read_struct_data(item);
-    top_sizer->Show(1, true);
-    right_sizer->Show(1, false);
-    right_sizer->Show(2, true);
-  }
-  SetSizerAndFit(top_sizer);
   patch_grid->EnableEditing(true);
+  struct_grid->EnableEditing(true);
 }
 
 void UPSFrame::on_new_patch(wxCommandEvent &event) {
@@ -471,8 +478,12 @@ void UPSFrame::on_data_tree_label_edit_end(wxTreeEvent &event) {
 
   auto item = event.GetItem();
   if (data_tree->GetItemParent(item) == data_tree_patches) {
-    patch_names.erase(data_tree->GetItemText(item));
+    auto old_label = data_tree->GetItemText(item);
+
+    patch_names.erase(old_label);
     patch_names.insert(label);
+
+    replace_patch_in_structs(old_label, label);
   }
 }
 
@@ -711,6 +722,8 @@ void UPSFrame::save_to_file(const wxString &path) {
   /* This forces the cell that is being edited to update its value */
   patch_grid->EnableEditing(false);
   patch_grid->EnableEditing(true);
+  struct_grid->EnableEditing(false);
+  struct_grid->EnableEditing(true);
 
   file.Clear();
 
@@ -1007,5 +1020,20 @@ void UPSFrame::read_struct_data(const wxTreeItemId &item) {
   for (size_t i = 0; i < data->data.size(); i += 5) {
     add_struct_command(data->data[i], data->data[i+1],
         data->data[i+2], data->data[i+3], data->data[i+4]);
+  }
+}
+
+void UPSFrame::replace_patch_in_structs(const wxString &src,
+    const wxString &dst) {
+  wxTreeItemIdValue cookie;
+  auto item = data_tree->GetFirstChild(data_tree_structs, cookie);
+  while (item.IsOk()) {
+    auto data = (StructData *) data_tree->GetItemData(item);
+    for (size_t i = 0; i < data->data.size(); i += 5) {
+      if (data->data[i+2] == src) {
+        data->data[i+2] = dst;
+      }
+    }
+    item = data_tree->GetNextChild(data_tree_structs, cookie);
   }
 }
