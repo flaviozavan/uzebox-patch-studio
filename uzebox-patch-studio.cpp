@@ -55,6 +55,7 @@ class UPSFrame: public wxFrame {
     void on_loop(wxCommandEvent &event);
     void on_stop(wxCommandEvent &event);
     void on_stop_all(wxCommandEvent &event);
+    void on_remove(wxCommandEvent &event);
 
     bool validate_var_name(const wxString &name);
 
@@ -143,6 +144,7 @@ wxBEGIN_EVENT_TABLE(UPSFrame, wxFrame)
   EVT_MENU(ID_LOOP, UPSFrame::on_loop)
   EVT_MENU(ID_STOP, UPSFrame::on_stop)
   EVT_MENU(ID_STOP_ALL, UPSFrame::on_stop_all)
+  EVT_BUTTON(ID_REMOVE_DATA, UPSFrame::on_remove)
 wxEND_EVENT_TABLE()
 wxIMPLEMENT_APP(UPSApp);
 
@@ -396,6 +398,9 @@ void UPSFrame::on_data_tree_changed(wxTreeEvent &event) {
       top_sizer->Show(1, true);
       right_sizer->Show(1, false);
       right_sizer->Show(2, true);
+    }
+    else {
+      top_sizer->Show(1, false);
     }
 
     SetSizerAndFit(top_sizer);
@@ -704,8 +709,9 @@ void UPSFrame::on_save_as(wxCommandEvent &event) {
       current_file_path.IsEmpty()? _("patches.inc") : current_file_path,
       wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
 
-  if (file_dialog.ShowModal() == wxID_CANCEL)
+  if (file_dialog.ShowModal() == wxID_CANCEL) {
     return;
+  }
 
   save_to_file(file_dialog.GetPath());
 }
@@ -1035,5 +1041,19 @@ void UPSFrame::replace_patch_in_structs(const wxString &src,
       }
     }
     item = data_tree->GetNextChild(data_tree_structs, cookie);
+  }
+}
+
+void UPSFrame::on_remove(wxCommandEvent &event) {
+  (void) event;
+  auto item = data_tree->GetSelection();
+  if (!item.IsOk()) {
+    return;
+  }
+
+  auto parent = data_tree->GetItemParent(item);
+
+  if (parent != data_tree_root) {
+    data_tree->Delete(item);
   }
 }
