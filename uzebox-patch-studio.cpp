@@ -15,8 +15,9 @@
 #include <set>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
+#include <regex>
 #include "grid.h"
-#include "input.h"
+#include "filereader.h"
 #include "patchdata.h"
 #include "structdata.h"
 
@@ -784,7 +785,7 @@ void UPSFrame::on_open(wxCommandEvent &event) {
 
 void UPSFrame::open_file(const wxString &path) {
   std::map<wxString, wxVector<long>> patches;
-  if (!read_patches(path, patches)) {
+  if (!FileReader::read_patches(path, patches)) {
     SetStatusText(wxString::Format(_("Failed to open %s"), path));
     return;
   }

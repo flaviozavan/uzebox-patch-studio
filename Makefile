@@ -4,7 +4,7 @@ LDLIBS=`wx-config --libs` `sdl2-config --libs` `pkg-config --libs SDL2_mixer`
 
 all: uzebox-patch-studio
 
-uzebox-patch-studio: grid.o input.o patchdata.o
+uzebox-patch-studio: grid.o filereader.o patchdata.o
 
 clean:
-	rm -f uzebox-patch-studio grid.o input.o patchdata.o
+	rm -f uzebox-patch-studio grid.o filereader.o patchdata.o
