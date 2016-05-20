@@ -320,8 +320,6 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
   struct_grid->SetColLabelValue(2, _("Patch"));
   struct_grid->SetColLabelValue(3, _("Loop Start"));
   struct_grid->SetColLabelValue(4, _("Loop End"));
-  struct_grid->SetColFormatNumber(3);
-  struct_grid->SetColFormatNumber(4);
   struct_grid->DisableDragColSize();
   struct_grid->AutoSize();
   struct_grid->SetColSize(0, struct_grid->GetColSize(0)*2);
@@ -826,13 +824,9 @@ void UPSFrame::open_file(const wxString &path) {
       type = std::min(2l, std::max(0l, type));
       data->data.push_back(type_choices[type]);
 
-      data->data.push_back(s.second[i+1]);
-      data->data.push_back(s.second[i+2]);
-
-      long loop_begin = strtol(s.second[i+3].c_str(), NULL, 0);
-      data->data.push_back(wxString::Format("%ld", loop_begin));
-      long loop_end = strtol(s.second[i+4].c_str(), NULL, 0);
-      data->data.push_back(wxString::Format("%ld", loop_end));
+      for (size_t j = 1; j < 5; j++) {
+        data->data.push_back(s.second[i+j]);
+      }
     }
 
     data_tree->SetItemData(c, data);
@@ -955,9 +949,8 @@ int UPSFrame::add_struct_command(const wxString &type, const wxString &pcm,
 }
 
 void UPSFrame::update_struct_row_colors(int row) {
-  long loop_start, loop_end;
-  struct_grid->GetCellValue(row, 3).ToLong(&loop_start);
-  struct_grid->GetCellValue(row, 4).ToLong(&loop_end);
+  long loop_start = strtol(struct_grid->GetCellValue(row, 3), NULL, 0);
+  long loop_end = strtol(struct_grid->GetCellValue(row, 4), NULL, 0);
 
   /* Type color is always green */
   struct_grid->SetCellBackgroundColour(row, 0, wxColour(0, 127, 0));
@@ -984,7 +977,7 @@ void UPSFrame::update_struct_row_colors(int row) {
         wxColor(127, 0, 0) : wxColour(0, 127, 0));
   }
 
-  /* 16 bit unsigned integers */
+  /* 16 bit unsigned integers or whatever string */
   struct_grid->SetCellBackgroundColour(row, 3,
       loop_start < 0 || loop_start >= 1<<16?
       wxColor(127, 0, 0) : wxColour(0, 127, 0));
