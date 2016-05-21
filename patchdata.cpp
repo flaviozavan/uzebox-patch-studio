@@ -209,7 +209,7 @@ bool PatchData::generate_wave() {
       case PC_WAVE:
         wave = data[i+2];
         if (wave >= NUM_WAVES) {
-	  last_error = wxString::Format(_("Command %lu: Invalid wave"), i/3+1);
+          last_error = wxString::Format(_("Command %lu: Invalid wave"), i/3+1);
           return false;
         }
         break;
@@ -217,8 +217,8 @@ bool PatchData::generate_wave() {
       case PC_NOTE_UP:
         note += data[i+2];
         if (note > 126 || note < 0) {
-	  last_error = wxString::Format(
-	      _("Command %lu: Invalid note reached"), i/3+1);
+          last_error = wxString::Format(
+              _("Command %lu: Invalid note reached"), i/3+1);
           return false;
         }
         track_step = step_table[(int) note];
@@ -227,8 +227,8 @@ bool PatchData::generate_wave() {
       case PC_NOTE_DOWN:
         note -= data[i+2];
         if (note > 126 || note < 0) {
-	  last_error = wxString::Format(
-	      _("Command %lu: Invalid note reached"), i/3+1);
+          last_error = wxString::Format(
+              _("Command %lu: Invalid note reached"), i/3+1);
           return false;
         }
         track_step = step_table[(int) note];
@@ -245,8 +245,8 @@ bool PatchData::generate_wave() {
       case PC_PITCH:
         note = data[i+2];
         if (note > 126 || note < 0) {
-	  last_error = wxString::Format(
-	      _("Command %lu: Invalid note"), i/3+1);
+          last_error = wxString::Format(
+              _("Command %lu: Invalid note"), i/3+1);
           return false;
         }
         track_step = step_table[(int) note];
@@ -265,8 +265,8 @@ bool PatchData::generate_wave() {
         current = step_table[(int) note];
         slide_note = note + data[i+2];
         if (slide_note > 126 || slide_note < 0) {
-	  last_error = wxString::Format(
-	      _("Command %lu: Invalid slide note"), i/3+1);
+          last_error = wxString::Format(
+              _("Command %lu: Invalid slide note"), i/3+1);
           return false;
         }
         target = step_table[(int) slide_note];
@@ -281,7 +281,7 @@ bool PatchData::generate_wave() {
       case PC_LOOP_END:
         if (loop_count <= 0) {
           break;
-	}
+        }
         else if (data[i+2] > 0) {
           i -= 3*(i+1);
         }
