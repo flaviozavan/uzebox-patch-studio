@@ -33,6 +33,7 @@ class PatchData : public wxTreeItemData {
     void stop();
     bool play(bool loop=false);
     void retrigger();
+    wxString last_error;
 
   private:
     wxVector<uint8_t> wave_data;

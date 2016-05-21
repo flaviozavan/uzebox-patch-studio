@@ -945,8 +945,7 @@ void UPSFrame::on_play(wxCommandEvent &event) {
             data_tree->GetItemText(item)));
     }
     else {
-      SetStatusText(wxString::Format(_("Failed to play %s"),
-            data_tree->GetItemText(item)));
+      SetStatusText(data->last_error);
     }
   }
 }
