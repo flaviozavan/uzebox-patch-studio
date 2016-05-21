@@ -292,14 +292,26 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
   top_sizer = new wxBoxSizer(wxHORIZONTAL);
   wxBoxSizer *left_sizer = new wxBoxSizer(wxVERTICAL);
   right_sizer = new wxBoxSizer(wxVERTICAL);
-  wxBoxSizer *data_control_sizer = new wxBoxSizer(wxHORIZONTAL);
+  wxBoxSizer *data_control_sizer = new wxBoxSizer(wxVERTICAL);
+  wxBoxSizer *data_control_sub_sizers[2] = {
+    new wxBoxSizer(wxHORIZONTAL),
+    new wxBoxSizer(wxHORIZONTAL),
+  };
   wxBoxSizer *command_control_sizer = new wxBoxSizer(wxHORIZONTAL);
 
-  data_control_sizer->Add(new wxButton(this, ID_NEW_PATCH, _("New Patch")));
-  data_control_sizer->Add(new wxButton(this, ID_NEW_STRUCT, _("New Struct")));
-  data_control_sizer->Add(new wxButton(this, ID_RENAME_DATA, _("Rename")));
-  data_control_sizer->Add(new wxButton(this, ID_REMOVE_DATA, _("Remove")));
-  data_control_sizer->Add(new wxButton(this, ID_CLONE_DATA, _("Clone")));
+  data_control_sub_sizers[0]->Add(
+      new wxButton(this, ID_NEW_PATCH, _("New Patch")));
+  data_control_sub_sizers[0]->Add(
+      new wxButton(this, ID_NEW_STRUCT, _("New Struct")));
+  data_control_sub_sizers[1]->Add(
+      new wxButton(this, ID_RENAME_DATA, _("Rename")));
+  data_control_sub_sizers[1]->Add(
+      new wxButton(this, ID_REMOVE_DATA, _("Remove")));
+  data_control_sub_sizers[1]->Add(
+      new wxButton(this, ID_CLONE_DATA, _("Clone")));
+
+  data_control_sizer->Add(data_control_sub_sizers[0], 0, wxEXPAND);
+  data_control_sizer->Add(data_control_sub_sizers[1], 0, wxEXPAND);
 
   left_sizer->Add(data_control_sizer, 0, wxEXPAND);
   left_sizer->Add(data_tree, wxEXPAND, wxEXPAND);
