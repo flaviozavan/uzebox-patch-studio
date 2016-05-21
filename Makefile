@@ -11,7 +11,7 @@ else
   CXXFLAGS+=-std=c++14
 endif
 
-OBJECTS=grid.o filereader.o patchdata.o structdata.o
+OBJECTS=upsgrid.o filereader.o patchdata.o structdata.o
 
 all: uzebox-patch-studio
 

@@ -3,7 +3,7 @@
   #include <wx/wx.h>
 #endif
 #include <wx/grid.h>
-#include "grid.h"
+#include "upsgrid.h"
 
 wxBEGIN_EVENT_TABLE(UPSGrid, wxGrid)
 EVT_GRID_CELL_LEFT_CLICK(UPSGrid::on_cell_left_click)

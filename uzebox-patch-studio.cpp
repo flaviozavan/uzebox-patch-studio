@@ -16,7 +16,7 @@
 #include <SDL.h>
 #include <SDL_mixer.h>
 #include <regex>
-#include "grid.h"
+#include "upsgrid.h"
 #include "filereader.h"
 #include "patchdata.h"
 #include "structdata.h"
