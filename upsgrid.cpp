@@ -19,3 +19,11 @@ void UPSGrid::on_cell_left_click(wxGridEvent &event) {
   SetGridCursor(event.GetRow(), event.GetCol());
   event.Skip();
 }
+
+void UPSGrid::deselect_cells() {
+  auto selected_rows = GetSelectedRows();
+  ClearSelection();
+  for (auto &r : selected_rows) {
+    SelectRow(r, true);
+  }
+}

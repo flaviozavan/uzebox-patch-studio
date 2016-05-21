@@ -91,8 +91,8 @@ class UPSFrame: public wxFrame {
     wxTreeItemId data_tree_patches;
     wxTreeItemId data_tree_structs;
     wxTreeCtrl *data_tree;
-    wxGrid *patch_grid;
-    wxGrid *struct_grid;
+    UPSGrid *patch_grid;
+    UPSGrid *struct_grid;
     wxBoxSizer *top_sizer;
     wxBoxSizer *right_sizer;
     wxString current_file_path;
@@ -558,6 +558,7 @@ int UPSFrame::add_patch_command(const wxString &delay, const wxString &command,
   patch_grid->SetCellValue(param, row_num, 2);
 
   update_patch_row_colors(row_num);
+  patch_grid->deselect_cells();
 
   return row_num;
 }
@@ -1023,6 +1024,7 @@ int UPSFrame::add_struct_command(const wxString &type, const wxString &pcm,
   struct_grid->SetCellValue(loop_end, row_num, 4);
 
   update_struct_row_colors(row_num);
+  struct_grid->deselect_cells();
 
   return row_num;
 }
