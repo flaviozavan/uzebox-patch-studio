@@ -938,6 +938,7 @@ void UPSFrame::on_play(wxCommandEvent &event) {
     /* Force updates */
     patch_grid->EnableEditing(false);
     patch_grid->EnableEditing(true);
+    update_patch_data(item);
 
     auto data = (PatchData *) data_tree->GetItemData(item);
     if (data->play()) {
@@ -958,6 +959,7 @@ void UPSFrame::on_loop(wxCommandEvent &event) {
     /* Force updates */
     patch_grid->EnableEditing(false);
     patch_grid->EnableEditing(true);
+    update_patch_data(item);
 
     auto data = (PatchData *) data_tree->GetItemData(item);
     if (data->play(true)) {
