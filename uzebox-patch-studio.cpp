@@ -21,6 +21,8 @@
 #include "patchdata.h"
 #include "structdata.h"
 
+#define MIN_CLIENT_HEIGHT 400
+
 class UPSApp: public wxApp {
   public:
     virtual bool OnInit();
@@ -82,6 +84,7 @@ class UPSFrame: public wxFrame {
     void update_struct_data(const wxTreeItemId &item);
     void read_struct_data(const wxTreeItemId &item);
     void replace_patch_in_structs(const wxString &src, const wxString &dst);
+    void update_layout();
 
     wxRegEx valid_var_name;
     wxTreeItemId data_tree_root;
@@ -347,7 +350,8 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
 
   top_sizer->Hide(1);
 
-  SetSizerAndFit(top_sizer);
+  SetSizer(top_sizer);
+  update_layout();
 
   wxAcceleratorEntry accelerator_entries[] = {
     wxAcceleratorEntry(wxACCEL_CTRL, WXK_RETURN, ID_PLAY),
@@ -427,7 +431,7 @@ void UPSFrame::on_data_tree_changed(wxTreeEvent &event) {
       top_sizer->Show(1, false);
     }
 
-    SetSizerAndFit(top_sizer);
+    update_layout();
   }
   patch_grid->EnableEditing(true);
   struct_grid->EnableEditing(true);
@@ -910,7 +914,7 @@ void UPSFrame::clear() {
   data_tree->DeleteChildren(data_tree_structs);
 
   top_sizer->Hide(1);
-  SetSizerAndFit(top_sizer);
+  update_layout();
 }
 
 void UPSFrame::on_play(wxCommandEvent &event) {
@@ -1136,4 +1140,11 @@ void UPSFrame::on_sync(wxCommandEvent &event) {
     data->retrigger();
     item = data_tree->GetNextChild(data_tree_patches, cookie);
   }
+}
+
+void UPSFrame::update_layout() {
+  top_sizer->Layout();
+  auto min_size = top_sizer->GetMinSize();
+  min_size.SetHeight(MIN_CLIENT_HEIGHT);
+  SetMinClientSize(min_size);
 }
