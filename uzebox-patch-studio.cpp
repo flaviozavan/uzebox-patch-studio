@@ -13,8 +13,8 @@
 #include <algorithm>
 #include <map>
 #include <set>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_mixer.h>
+#include <SDL.h>
+#include <SDL_mixer.h>
 #include <regex>
 #include "grid.h"
 #include "filereader.h"
@@ -155,19 +155,20 @@ wxEND_EVENT_TABLE()
 wxIMPLEMENT_APP(UPSApp);
 
 bool UPSApp::OnInit() {
-  if (SDL_Init(SDL_INIT_AUDIO) == -1
-      || Mix_OpenAudio(SAMPLE_RATE, AUDIO_U8, 1, 4096) == -1) {
-    return false;
-  }
-
   UPSFrame *frame = new UPSFrame(_("Uzebox Patch Studio"),
       wxPoint(50, 50), wxSize(600, 400));
   frame->Show(true);
 
+  if (SDL_Init(SDL_INIT_AUDIO) == -1
+      || Mix_OpenAudio(SAMPLE_RATE, AUDIO_U8, 1, 4096) == -1) {
+    wxMessageDialog(frame, SDL_GetError(),
+        _("SDL Error"), wxOK | wxICON_ERROR).ShowModal();
+    return false;
+  }
+
   if (argc > 1) {
     frame->open_file(argv[1]);
   }
-
 
   return true;
 }

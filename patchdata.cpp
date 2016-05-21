@@ -1,6 +1,6 @@
 #include <wx/treectrl.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_mixer.h>
+#include <SDL.h>
+#include <SDL_mixer.h>
 #include "patchdata.h"
 #include "waves.h"
 #include "step_table.h"
