@@ -21,5 +21,6 @@ uzebox-patch-studio: $(OBJECTS)
 windows.res: windows.rc
 	windres windows.rc -O coff -o windows.res
 
+.PHONY: clean
 clean:
 	rm -f uzebox-patch-studio $(OBJECTS)
