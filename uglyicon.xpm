@@ -1,5 +1,5 @@
 /* XPM */
-static char *uglyicon_xpm[] = {
+static const char *uglyicon_xpm[] = {
 "32 32 4 1",
 "0	c #B60000",
 "1	c #009200",

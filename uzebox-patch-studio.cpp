@@ -161,7 +161,7 @@ wxIMPLEMENT_APP(UPSApp);
 bool UPSApp::OnInit() {
   UPSFrame *frame = new UPSFrame(_("Uzebox Patch Studio"),
       wxPoint(50, 50), wxSize(600, 400));
-  frame->SetIcon(uglyicon);
+  frame->SetIcon(uglyicon_xpm);
   frame->Show(true);
 
   if (SDL_Init(SDL_INIT_AUDIO) == -1
