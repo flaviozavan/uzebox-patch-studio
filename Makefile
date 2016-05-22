@@ -3,12 +3,12 @@ CXXFLAGS+=`sdl2-config --cflags`
 LDLIBS=`wx-config --libs` `sdl2-config --libs`
 
 ifneq (, $(findstring MINGW, $(shell uname)))
-  LDLIBS+=-lSDL2_mixer
-  CXXFLAGS+=-std=gnu++14
+	LDLIBS+=-lSDL2_mixer
+	CXXFLAGS+=-std=gnu++14
 else
-  LDLIBS+=`pkg-config --libs SDL2_mixer`
-  CXXFLAGS+=`pkg-config --cflags SDL2_mixer`
-  CXXFLAGS+=-std=c++14
+	LDLIBS+=`pkg-config --libs SDL2_mixer`
+	CXXFLAGS+=`pkg-config --cflags SDL2_mixer`
+	CXXFLAGS+=-std=c++14
 endif
 
 OBJECTS=upsgrid.o filereader.o patchdata.o structdata.o
