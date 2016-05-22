@@ -20,6 +20,7 @@
 #include "filereader.h"
 #include "patchdata.h"
 #include "structdata.h"
+#include "uglyicon.xpm"
 
 #define MIN_CLIENT_HEIGHT 400
 
@@ -160,6 +161,7 @@ wxIMPLEMENT_APP(UPSApp);
 bool UPSApp::OnInit() {
   UPSFrame *frame = new UPSFrame(_("Uzebox Patch Studio"),
       wxPoint(50, 50), wxSize(600, 400));
+  frame->SetIcon(uglyicon);
   frame->Show(true);
 
   if (SDL_Init(SDL_INIT_AUDIO) == -1
