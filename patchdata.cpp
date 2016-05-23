@@ -55,6 +55,7 @@ void PatchData::retrigger() {
 void PatchData::free_chunk() {
   if (wave != nullptr) {
     Mix_FreeChunk(wave);
+    wave = nullptr;
   }
 }
 
