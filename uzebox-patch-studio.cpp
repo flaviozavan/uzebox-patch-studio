@@ -24,6 +24,7 @@
 #include "icons.h"
 
 #define MIN_CLIENT_HEIGHT 400
+#define VERSION_STRING "0.0.1"
 
 class UPSApp: public wxApp {
   public:
@@ -399,8 +400,8 @@ void UPSFrame::on_exit(wxCommandEvent &event) {
 void UPSFrame::on_about(wxCommandEvent &event) {
   (void) event;
   wxAboutDialogInfo info;
-  info.SetName(_("Uzebox Patch Studio"));
-  info.SetVersion(_("0.0.1"));
+  info.SetName(wxT("Uzebox Patch Studio"));
+  info.SetVersion(wxT(VERSION_STRING));
   info.SetDescription(_("A graphical sound patch editor for the Uzebox"));
   info.SetCopyright(_("(c) 2016"));
   info.AddDeveloper(_("Flavio Zavan"));
@@ -809,6 +810,9 @@ void UPSFrame::save_to_file(const wxString &path) {
   struct_grid->EnableEditing(true);
 
   file.Clear();
+
+  file.AddLine(wxString::Format("/* Created with Uzebox Patch Studio %s */",
+        VERSION_STRING));
 
   /* Patches have to come first */
   wxTreeItemIdValue cookie;
