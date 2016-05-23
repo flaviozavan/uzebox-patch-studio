@@ -44,5 +44,6 @@ Compiling on Mac OS
 -------------
 
 1. Install wxmac, SDL2 and SDL2 Mixer using homebrew, ports or similar
+**Homebrew:** brew install sdl2 sdl2_mixer wxmac
 2. cd to Uzebox Patch Studio's directory
 3. make
