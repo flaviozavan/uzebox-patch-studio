@@ -86,6 +86,7 @@ class UPSFrame: public wxFrame {
     void read_struct_data(const wxTreeItemId &item);
     void replace_patch_in_structs(const wxString &src, const wxString &dst);
     void update_layout();
+    void sanitize_string(wxString &str);
 
     wxRegEx valid_var_name;
     wxTreeItemId data_tree_root;
@@ -698,9 +699,15 @@ void UPSFrame::on_clone_command(wxCommandEvent &event) {
 void UPSFrame::on_cell_changed(wxGridEvent &event) {
   /* Patch grid is at position 1 */
   if (right_sizer->IsShown(1)) {
+    auto str = patch_grid->GetCellValue(event.GetRow(), event.GetCol());
+    sanitize_string(str);
+    patch_grid->SetCellValue(event.GetRow(), event.GetCol(), str);
     update_patch_row_colors(event.GetRow());
   }
   else if (right_sizer->IsShown(2)) {
+    auto str = struct_grid->GetCellValue(event.GetRow(), event.GetCol());
+    sanitize_string(str);
+    struct_grid->SetCellValue(event.GetRow(), event.GetCol(), str);
     update_struct_row_colors(event.GetRow());
   }
 }
@@ -1164,4 +1171,10 @@ void UPSFrame::update_layout() {
   auto min_size = top_sizer->GetMinSize();
   min_size.SetHeight(MIN_CLIENT_HEIGHT);
   SetMinClientSize(min_size);
+}
+
+void UPSFrame::sanitize_string(wxString &str) {
+  for (auto &c : wxT(",{}")) {
+    str.Replace(c, wxT(""));
+  }
 }
