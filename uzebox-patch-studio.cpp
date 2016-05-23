@@ -64,6 +64,8 @@ class UPSFrame: public wxFrame {
     void on_clone_data(wxCommandEvent &event);
     void on_sync(wxCommandEvent &event);
     void on_export(wxCommandEvent &event);
+    void on_help_shortcuts(wxCommandEvent &event);
+    void on_help_noise(wxCommandEvent &event);
 
     bool validate_var_name(const wxString &name);
 
@@ -132,6 +134,8 @@ enum {
   ID_DOWN_COMMAND,
   ID_CLONE_COMMAND,
   ID_EXPORT,
+  ID_HELP_SHORTCUTS,
+  ID_HELP_NOISE,
 };
 
 wxBEGIN_EVENT_TABLE(UPSFrame, wxFrame)
@@ -161,6 +165,8 @@ wxBEGIN_EVENT_TABLE(UPSFrame, wxFrame)
   EVT_BUTTON(ID_REMOVE_DATA, UPSFrame::on_remove)
   EVT_BUTTON(ID_CLONE_DATA, UPSFrame::on_clone_data)
   EVT_MENU(ID_EXPORT, UPSFrame::on_export)
+  EVT_MENU(ID_HELP_SHORTCUTS, UPSFrame::on_help_shortcuts)
+  EVT_MENU(ID_HELP_NOISE, UPSFrame::on_help_noise)
 wxEND_EVENT_TABLE()
 wxIMPLEMENT_APP(UPSApp);
 
@@ -273,6 +279,8 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
   menuFile->AppendSeparator();
   menuFile->Append(wxID_EXIT);
   wxMenu *menuHelp = new wxMenu;
+  menuHelp->Append(ID_HELP_SHORTCUTS, _("Keyboard Shortcuts"));
+  menuHelp->Append(ID_HELP_NOISE, _("Noise Patches"));
   menuHelp->Append(wxID_ABOUT);
   wxMenuBar *menuBar = new wxMenuBar;
   menuBar->Append(menuFile, _("&File"));
@@ -1235,4 +1243,30 @@ void UPSFrame::on_export(wxCommandEvent &event) {
     return;
   }
   file.Write(&(wave_data[0]), wave_data.size());
+}
+
+void UPSFrame::on_help_shortcuts(wxCommandEvent &event) {
+  (void) event;
+
+  wxMessageDialog(this, _(
+        "Play CTRL+Return\n"
+        "Loop CTRL+L\n"
+        "Stop CTRL+T\n"
+        "Stop All CTRL+A\n"
+        "Sync CTRL+Y\n"
+        "Up CTRL+Up\n"
+        "Down CTRL+Down\n"
+        "Clone CTRL+C\n"
+        "Delete CTRL+D\n"
+        "New Command CTRL+E"
+        ), _("Keyboard Shortcuts Help")).ShowModal();
+}
+
+void UPSFrame::on_help_noise(wxCommandEvent &event) {
+  (void) event;
+
+  wxMessageDialog(this, _(
+        "Patches are automatically played as noise "
+        "when a NOISE_PARAM command is present."
+        ), _("Noise Patches Help")).ShowModal();
 }
