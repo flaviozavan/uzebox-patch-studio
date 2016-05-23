@@ -30,7 +30,8 @@ bool PatchData::play(bool loop) {
   stop();
   free_chunk();
 
-  if (generate_wave() && (wave = Mix_QuickLoad_WAV(&(wave_data[0])))) {
+  if (generate_wave(is_noise_patch())
+      && (wave = Mix_QuickLoad_WAV(&(wave_data[0])))) {
     if (loop) {
       channel = Mix_PlayChannel(-1, wave, -1);
     }
@@ -127,7 +128,7 @@ void PatchData::add_headers() {
     wave_data.push_back(0);
 }
 
-bool PatchData::generate_wave() {
+bool PatchData::generate_wave(bool is_noise) {
   int8_t note = 80;
   uint16_t next_sample = 0;
   uint8_t note_volume = DEFAULT_VOLUME;
@@ -143,6 +144,9 @@ bool PatchData::generate_wave() {
   int8_t slide_note = 0;
   bool sliding = false;
   uint16_t track_step = 0;
+  uint16_t noise_barrel = 0x0101;
+  uint8_t noise_params = 1;
+  int8_t noise_divider = 0;
   wave_data.resize(WAVE_HEADER_LEN);
 
   for (size_t i = 0; i < data.size(); i += 3) {
@@ -183,8 +187,20 @@ bool PatchData::generate_wave() {
       tremolo_pos += tremolo_rate;
 
       for (int j = 0; j < SAMPLES_PER_FRAME; j++) {
-        int8_t sample = waves[wave][next_sample>>8];
-        next_sample += track_step;
+        int8_t sample;
+        if (is_noise) {
+          if (--noise_divider < 0) {
+            noise_divider = noise_params >> 1;
+            uint8_t r_xor = (noise_barrel ^ (noise_barrel >> 1)) & 1;
+            noise_barrel = (noise_barrel >> 1)
+              | (r_xor << (noise_params & 1? 14 : 6));
+          }
+          sample = noise_barrel & 1? 127 : -128;
+        }
+        else {
+          sample = waves[wave][next_sample>>8];
+          next_sample += track_step;
+        }
         int16_t v16 = (int16_t) sample * vol;
         /* Signed extention */
         int8_t v8 = v16 / 256;
@@ -192,8 +208,9 @@ bool PatchData::generate_wave() {
       }
     }
 
-    if (data[i+1] == PATCH_END || data[i+1] == PC_NOTE_CUT)
+    if (data[i+1] == PATCH_END || data[i+1] == PC_NOTE_CUT) {
       break;
+    }
 
     int current;
     int target;
@@ -202,8 +219,14 @@ bool PatchData::generate_wave() {
         envelope_step = data[i+2];
         break;
 
-      /* TODO */
       case PC_NOISE_PARAMS:
+        noise_barrel = 0x0101;
+        noise_params = data[i+2];
+        if (data[i+2] < 0 || data[i+2] > 255) {
+          last_error = wxString::Format(
+              _("Command %lu: Invalid noise parameter"), i/3+1);
+          return false;
+        }
         break;
 
       case PC_WAVE:
@@ -303,4 +326,14 @@ bool PatchData::generate_wave() {
   add_headers();
 
   return true;
+}
+
+bool PatchData::is_noise_patch() {
+  for (size_t i = 0; i < data.size(); i += 3) {
+    if (data[i+1] == PC_NOISE_PARAMS) {
+      return true;
+    }
+  }
+
+  return false;
 }

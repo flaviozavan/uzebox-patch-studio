@@ -187,7 +187,7 @@ int UPSApp::OnExit() {
 
 const std::map<wxString, std::pair<long, long>> UPSFrame::limits = {
   {_("ENV_SPEED"), std::make_pair(-128, 127)},
-  {_("NOISE_PARAMS"), std::make_pair(0, 127)},
+  {_("NOISE_PARAMS"), std::make_pair(0, 255)},
   {_("WAVE"), std::make_pair(0, NUM_WAVES-1)},
   {_("NOTE_UP"), std::make_pair(0, 255)},
   {_("NOTE_DOWN"), std::make_pair(0, 255)},

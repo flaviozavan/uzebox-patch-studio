@@ -42,5 +42,6 @@ class PatchData : public wxTreeItemData {
 
     void free_chunk();
     void add_headers();
-    bool generate_wave();
+    bool generate_wave(bool is_noise=false);
+    bool is_noise_patch();
 };
