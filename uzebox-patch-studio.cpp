@@ -241,22 +241,22 @@ const std::map<wxString, long> UPSFrame::choice_values = {
 };
 
 const std::map<wxString, long> UPSFrame::command_ids = {
-  {_("ENV_SPEED"), 0},
-  {_("NOISE_PARAMS"), 1},
-  {_("WAVE"), 2},
-  {_("NOTE_UP"), 3},
-  {_("NOTE_DOWN"), 4},
-  {_("NOTE_CUT"), 5},
-  {_("NOTE_HOLD"), 6},
-  {_("ENV_VOL"), 7},
-  {_("PITCH"), 8},
-  {_("TREMOLO_LEVEL"), 9},
-  {_("TREMOLO_RATE"), 10},
-  {_("SLIDE"), 11},
-  {_("SLIDE_SPEED"), 12},
-  {_("LOOP_START"), 13},
-  {_("LOOP_END"), 14},
-  {_("PATCH_END"), 0xff},
+  {_("ENV_SPEED"), PC_ENV_SPEED},
+  {_("NOISE_PARAMS"), PC_NOISE_PARAMS},
+  {_("WAVE"), PC_WAVE},
+  {_("NOTE_UP"), PC_NOTE_UP},
+  {_("NOTE_DOWN"), PC_NOTE_DOWN},
+  {_("NOTE_CUT"), PC_NOTE_CUT},
+  {_("NOTE_HOLD"), PC_NOTE_HOLD},
+  {_("ENV_VOL"), PC_ENV_VOL},
+  {_("PITCH"), PC_PITCH},
+  {_("TREMOLO_LEVEL"), PC_TREMOLO_LEVEL},
+  {_("TREMOLO_RATE"), PC_TREMOLO_RATE},
+  {_("SLIDE"), PC_SLIDE},
+  {_("SLIDE_SPEED"), PC_SLIDE_SPEED},
+  {_("LOOP_START"), PC_LOOP_START},
+  {_("LOOP_END"), PC_LOOP_END},
+  {_("PATCH_END"), PATCH_END},
 };
 
 UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
@@ -824,8 +824,7 @@ void UPSFrame::save_to_file(const wxString &path) {
       file.AddLine(wxT("  0, PC_PATCH_END,"));
     }
     for (size_t i = 0; i < data->data.size(); i += 3) {
-      long command = std::min(15l, data->data[i+1]);
-      if (command == 15) {
+      if (data->data[i+1] >= 15) {
         /* This saves a byte for every patch */
         if(i+3 >= data->data.size()) {
           file.AddLine(wxString::Format("  %ld, PATCH_END,", data->data[i]));
@@ -837,7 +836,8 @@ void UPSFrame::save_to_file(const wxString &path) {
       }
       else {
         file.AddLine(wxString::Format("  %ld, PC_%s, %ld,",
-              data->data[i], command_choices[command], data->data[i+2]));
+              data->data[i], command_choices[data->data[i+1]],
+              data->data[i+2]));
       }
     }
 
