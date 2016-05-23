@@ -234,6 +234,11 @@ bool PatchData::generate_wave(bool is_noise) {
     switch (data[i+1]) {
       case PC_ENV_SPEED:
         envelope_step = data[i+2];
+        if (data[i+2] < -128 || data[i+2] > 127) {
+          last_error = wxString::Format(
+              _("Command %lu: Invalid envelope speed"), i/3+1);
+          return false;
+        }
         break;
 
       case PC_NOISE_PARAMS:
@@ -248,7 +253,7 @@ bool PatchData::generate_wave(bool is_noise) {
 
       case PC_WAVE:
         wave = data[i+2];
-        if (wave >= NUM_WAVES) {
+        if (wave < 0 || wave >= NUM_WAVES) {
           last_error = wxString::Format(_("Command %lu: Invalid wave"), i/3+1);
           return false;
         }
@@ -280,6 +285,11 @@ bool PatchData::generate_wave(bool is_noise) {
 
       case PC_ENV_VOL:
         envelope_volume = data[i+2];
+        if (data[i+2] < 0 || data[i+2] > 255) {
+          last_error = wxString::Format(
+              _("Command %lu: Invalid envelope volume"), i/3+1);
+          return false;
+        }
         break;
 
       case PC_PITCH:
@@ -295,10 +305,20 @@ bool PatchData::generate_wave(bool is_noise) {
 
       case PC_TREMOLO_LEVEL:
         tremolo_level = data[i+2];
+        if (data[i+2] < 0 || data[i+2] > 255) {
+          last_error = wxString::Format(
+              _("Command %lu: Invalid tremolo level"), i/3+1);
+          return false;
+        }
         break;
 
       case PC_TREMOLO_RATE:
         tremolo_rate = data[i+2];
+        if (data[i+2] < 0 || data[i+2] > 255) {
+          last_error = wxString::Format(
+              _("Command %lu: Invalid tremolo rate"), i/3+1);
+          return false;
+        }
         break;
 
       case PC_SLIDE:
@@ -316,9 +336,19 @@ bool PatchData::generate_wave(bool is_noise) {
 
       case PC_SLIDE_SPEED:
         slide_speed = data[i+2];
+        if (data[i+2] < 0 || data[i+2] > 255) {
+          last_error = wxString::Format(
+              _("Command %lu: Invalid slide speed"), i/3+1);
+          return false;
+        }
         break;
 
       case PC_LOOP_END:
+        if (data[i+2] < 0 || data[i+2] > 255) {
+          last_error = wxString::Format(
+              _("Command %lu: Invalid loop end jump"), i/3+1);
+          return false;
+        }
         if (loop_count <= 0) {
           break;
         }
@@ -334,6 +364,12 @@ bool PatchData::generate_wave(bool is_noise) {
 
       case PC_LOOP_START:
         loop_count = data[i+2];
+        if (data[i+2] < 0 || data[i+2] > 255) {
+          last_error = wxString::Format(
+              _("Command %lu: Invalid loop count"), i/3+1);
+          return false;
+        }
+        break;
 
       default:
         break;
