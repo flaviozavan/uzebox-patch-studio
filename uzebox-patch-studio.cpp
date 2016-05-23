@@ -10,6 +10,7 @@
 #include <wx/filedlg.h>
 #include <wx/textfile.h>
 #include <wx/sound.h>
+#include <wx/ffile.h>
 #include <algorithm>
 #include <map>
 #include <set>
@@ -61,6 +62,7 @@ class UPSFrame: public wxFrame {
     void on_remove(wxCommandEvent &event);
     void on_clone_data(wxCommandEvent &event);
     void on_sync(wxCommandEvent &event);
+    void on_export(wxCommandEvent &event);
 
     bool validate_var_name(const wxString &name);
 
@@ -128,6 +130,7 @@ enum {
   ID_UP_COMMAND,
   ID_DOWN_COMMAND,
   ID_CLONE_COMMAND,
+  ID_EXPORT,
 };
 
 wxBEGIN_EVENT_TABLE(UPSFrame, wxFrame)
@@ -156,6 +159,7 @@ wxBEGIN_EVENT_TABLE(UPSFrame, wxFrame)
   EVT_MENU(ID_SYNC, UPSFrame::on_sync)
   EVT_BUTTON(ID_REMOVE_DATA, UPSFrame::on_remove)
   EVT_BUTTON(ID_CLONE_DATA, UPSFrame::on_clone_data)
+  EVT_MENU(ID_EXPORT, UPSFrame::on_export)
 wxEND_EVENT_TABLE()
 wxIMPLEMENT_APP(UPSApp);
 
@@ -264,6 +268,7 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
   menuFile->Append(wxID_OPEN);
   menuFile->Append(wxID_SAVE);
   menuFile->Append(wxID_SAVEAS);
+  menuFile->Append(ID_EXPORT, _("&Export to WAVE\tCTRL+SHIFT+E"));
   menuFile->AppendSeparator();
   menuFile->Append(wxID_EXIT);
   wxMenu *menuHelp = new wxMenu;
@@ -379,6 +384,7 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
     wxAcceleratorEntry(wxACCEL_CTRL, (int) 'C', ID_CLONE_COMMAND),
     wxAcceleratorEntry(wxACCEL_CTRL, (int) 'D', ID_DELETE_COMMAND),
     wxAcceleratorEntry(wxACCEL_CTRL, (int) 'E', ID_NEW_COMMAND),
+    wxAcceleratorEntry(wxACCEL_CTRL | wxACCEL_SHIFT, (int) 'E', ID_EXPORT),
   };
   SetAcceleratorTable(wxAcceleratorTable(
         sizeof(accelerator_entries)/sizeof(wxAcceleratorEntry),
@@ -1190,4 +1196,37 @@ void UPSFrame::sanitize_string(wxString &str) {
   for (auto &c : wxT(",{}")) {
     str.Replace(c, wxT(""));
   }
+}
+
+void UPSFrame::on_export(wxCommandEvent &event) {
+  (void) event;
+
+  auto item = data_tree->GetSelection();
+  if (!item.IsOk() || data_tree->GetItemParent(item) != data_tree_patches) {
+    SetStatusText(_("No patch selected for exporting"));
+    return;
+  }
+
+  wxFileDialog file_dialog(this, _("Export to WAVE"), wxEmptyString,
+      wxString::Format(_("%s.wav"), data_tree->GetItemText(item)),
+      wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+  if (file_dialog.ShowModal() == wxID_CANCEL) {
+    return;
+  }
+
+  wxFFile file(file_dialog.GetPath(), "wb");
+  if (!file.IsOpened()) {
+    SetStatusText(wxString::Format(_("Failed to write to %s"),
+          file_dialog.GetPath()));
+    return;
+  }
+
+  wxVector<uint8_t> wave_data;
+  auto data = (PatchData *) data_tree->GetItemData(item);
+  if (!data->generate_wave(wave_data)) {
+    SetStatusText(data->last_error);
+    return;
+  }
+  file.Write(&(wave_data[0]), wave_data.size());
 }

@@ -30,7 +30,7 @@ bool PatchData::play(bool loop) {
   stop();
   free_chunk();
 
-  if (generate_wave(is_noise_patch())
+  if (generate_wave(wave_data)
       && (wave = Mix_QuickLoad_WAV(&(wave_data[0])))) {
     if (loop) {
       channel = Mix_PlayChannel(-1, wave, -1);
@@ -58,77 +58,77 @@ void PatchData::free_chunk() {
   }
 }
 
-void PatchData::add_headers() {
-  size_t data_size = wave_data.size() - WAVE_HEADER_LEN;
+void PatchData::add_headers(wxVector<uint8_t> &out_data) {
+  size_t data_size = out_data.size() - WAVE_HEADER_LEN;
   const uint32_t subchunk2_size = data_size & 1? data_size+1 : data_size;
   const uint32_t chunk_size = subchunk2_size + 36;
   const uint32_t sample_rate = SAMPLE_RATE;
   int pos = 0;
 
   /* ChunkID */
-  wave_data[pos++] = 'R';
-  wave_data[pos++] = 'I';
-  wave_data[pos++] = 'F';
-  wave_data[pos++] = 'F';
+  out_data[pos++] = 'R';
+  out_data[pos++] = 'I';
+  out_data[pos++] = 'F';
+  out_data[pos++] = 'F';
   /* ChunkSize */
-  wave_data[pos++] = chunk_size & 0xff;
-  wave_data[pos++] = (chunk_size>>8) & 0xff;
-  wave_data[pos++] = (chunk_size>>16) & 0xff;
-  wave_data[pos++] = (chunk_size>>24) & 0xff;
+  out_data[pos++] = chunk_size & 0xff;
+  out_data[pos++] = (chunk_size>>8) & 0xff;
+  out_data[pos++] = (chunk_size>>16) & 0xff;
+  out_data[pos++] = (chunk_size>>24) & 0xff;
   /* Format */
-  wave_data[pos++] = 'W';
-  wave_data[pos++] = 'A';
-  wave_data[pos++] = 'V';
-  wave_data[pos++] = 'E';
+  out_data[pos++] = 'W';
+  out_data[pos++] = 'A';
+  out_data[pos++] = 'V';
+  out_data[pos++] = 'E';
   /* Subchunk1ID */
-  wave_data[pos++] = 'f';
-  wave_data[pos++] = 'm';
-  wave_data[pos++] = 't';
-  wave_data[pos++] = ' ';
+  out_data[pos++] = 'f';
+  out_data[pos++] = 'm';
+  out_data[pos++] = 't';
+  out_data[pos++] = ' ';
   /* Subchunk1Size*/
-  wave_data[pos++] = 16;
-  wave_data[pos++] = 0;
-  wave_data[pos++] = 0;
-  wave_data[pos++] = 0;
+  out_data[pos++] = 16;
+  out_data[pos++] = 0;
+  out_data[pos++] = 0;
+  out_data[pos++] = 0;
   /* AudioFormat */
-  wave_data[pos++] = 1;
-  wave_data[pos++] = 0;
+  out_data[pos++] = 1;
+  out_data[pos++] = 0;
   /* NumChannels */
-  wave_data[pos++] = 1;
-  wave_data[pos++] = 0;
+  out_data[pos++] = 1;
+  out_data[pos++] = 0;
   /* SampleRate */
-  wave_data[pos++] = sample_rate & 0xff;
-  wave_data[pos++] = (sample_rate>>8) & 0xff;
-  wave_data[pos++] = (sample_rate>>16) & 0xff;
-  wave_data[pos++] = (sample_rate>>24) & 0xff;
+  out_data[pos++] = sample_rate & 0xff;
+  out_data[pos++] = (sample_rate>>8) & 0xff;
+  out_data[pos++] = (sample_rate>>16) & 0xff;
+  out_data[pos++] = (sample_rate>>24) & 0xff;
   /* ByteRate */
-  wave_data[pos++] = sample_rate & 0xff;
-  wave_data[pos++] = (sample_rate>>8) & 0xff;
-  wave_data[pos++] = (sample_rate>>16) & 0xff;
-  wave_data[pos++] = (sample_rate>>24) & 0xff;
+  out_data[pos++] = sample_rate & 0xff;
+  out_data[pos++] = (sample_rate>>8) & 0xff;
+  out_data[pos++] = (sample_rate>>16) & 0xff;
+  out_data[pos++] = (sample_rate>>24) & 0xff;
   /* BlockAlign */
-  wave_data[pos++] = 1;
-  wave_data[pos++] = 0;
+  out_data[pos++] = 1;
+  out_data[pos++] = 0;
   /* BitsPerSample */
-  wave_data[pos++] = 8;
-  wave_data[pos++] = 0;
+  out_data[pos++] = 8;
+  out_data[pos++] = 0;
   /* Subchunk2ID */
-  wave_data[pos++] = 'd';
-  wave_data[pos++] = 'a';
-  wave_data[pos++] = 't';
-  wave_data[pos++] = 'a';
+  out_data[pos++] = 'd';
+  out_data[pos++] = 'a';
+  out_data[pos++] = 't';
+  out_data[pos++] = 'a';
   /* Subchunk2Size */
-  wave_data[pos++] = subchunk2_size & 0xff;
-  wave_data[pos++] = (subchunk2_size>>8) & 0xff;
-  wave_data[pos++] = (subchunk2_size>>16) & 0xff;
-  wave_data[pos++] = (subchunk2_size>>24) & 0xff;
+  out_data[pos++] = subchunk2_size & 0xff;
+  out_data[pos++] = (subchunk2_size>>8) & 0xff;
+  out_data[pos++] = (subchunk2_size>>16) & 0xff;
+  out_data[pos++] = (subchunk2_size>>24) & 0xff;
 
   /* Padding */
-  if (wave_data.size() & 1)
-    wave_data.push_back(0);
+  if (out_data.size() & 1)
+    out_data.push_back(0);
 }
 
-bool PatchData::generate_wave(bool is_noise) {
+bool PatchData::generate_wave(wxVector<uint8_t> &out_data) {
   int8_t note = 80;
   uint16_t next_sample = 0;
   uint8_t note_volume = DEFAULT_VOLUME;
@@ -148,7 +148,9 @@ bool PatchData::generate_wave(bool is_noise) {
   uint8_t noise_params = 1;
   int8_t noise_divider = 0;
   int extra_time = 0;
-  wave_data.resize(WAVE_HEADER_LEN);
+  bool is_noise = is_noise_patch();
+  out_data.resize(WAVE_HEADER_LEN);
+
 
   for (size_t i = 0; extra_time || i < data.size(); i += 3) {
     for (int delay = extra_time? extra_time : data[i]; delay; delay--) {
@@ -205,7 +207,7 @@ bool PatchData::generate_wave(bool is_noise) {
         int16_t v16 = (int16_t) sample * vol;
         /* Signed extention */
         int8_t v8 = v16 / 256;
-        wave_data.push_back((int) v8 + 128);
+        out_data.push_back((int) v8 + 128);
       }
     }
 
@@ -376,7 +378,7 @@ bool PatchData::generate_wave(bool is_noise) {
     }
   }
 
-  add_headers();
+  add_headers(out_data);
 
   return true;
 }

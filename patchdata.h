@@ -35,6 +35,7 @@ class PatchData : public wxTreeItemData {
     void stop();
     bool play(bool loop=false);
     void retrigger();
+    bool generate_wave(wxVector<uint8_t> &out_data);
     wxString last_error;
 
   private:
@@ -43,7 +44,6 @@ class PatchData : public wxTreeItemData {
     int channel;
 
     void free_chunk();
-    void add_headers();
-    bool generate_wave(bool is_noise=false);
+    void add_headers(wxVector<uint8_t> &out_data);
     bool is_noise_patch();
 };
