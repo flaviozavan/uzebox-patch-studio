@@ -147,10 +147,11 @@ bool PatchData::generate_wave(bool is_noise) {
   uint16_t noise_barrel = 0x0101;
   uint8_t noise_params = 1;
   int8_t noise_divider = 0;
+  int extra_time = 0;
   wave_data.resize(WAVE_HEADER_LEN);
 
-  for (size_t i = 0; i < data.size(); i += 3) {
-    for (int delay = data[i]; delay; delay--) {
+  for (size_t i = 0; extra_time || i < data.size(); i += 3) {
+    for (int delay = extra_time? extra_time : data[i]; delay; delay--) {
       int16_t e_vol = envelope_volume + envelope_step;
       e_vol = std::max((int16_t) 0, std::min((int16_t) 0xff, e_vol));
       envelope_volume = e_vol;
@@ -208,7 +209,23 @@ bool PatchData::generate_wave(bool is_noise) {
       }
     }
 
-    if (data[i+1] == PATCH_END || data[i+1] == PC_NOTE_CUT) {
+    if (extra_time || data[i+1] == PATCH_END) {
+      if (!envelope_volume) {
+        break;
+      }
+      if (envelope_step < 0) {
+        extra_time = 1;
+      }
+      else if (!extra_time) {
+        extra_time = EXTRA_TIME;
+      }
+      else {
+        break;
+      }
+
+      continue;
+    }
+    else if (data[i+1] == PC_NOTE_CUT) {
       break;
     }
 
