@@ -815,12 +815,25 @@ void UPSFrame::save_to_file(const wxString &path) {
 
     auto data = (PatchData *) data_tree->GetItemData(item);
     if (data->data.empty()) {
-      file.AddLine(wxT("  0, PC_PATCH_END, 0,"));
+      file.AddLine(wxT("  0, PC_PATCH_END,"));
     }
-    for (size_t i = 0; i < data->data.size(); i += 3)
-      file.AddLine(wxString::Format("  %ld, PC_%s, %ld,",
-            data->data[i], command_choices[std::min(15l, data->data[i+1])],
-            data->data[i+2]));
+    for (size_t i = 0; i < data->data.size(); i += 3) {
+      long command = std::min(15l, data->data[i+1]);
+      if (command == 15) {
+        /* This saves a byte for every patch */
+        if(i+3 >= data->data.size()) {
+          file.AddLine(wxString::Format("  %ld, PATCH_END,", data->data[i]));
+        }
+        else {
+          file.AddLine(wxString::Format("  %ld, PATCH_END, %ld,",
+                data->data[i], data->data[i+2]));
+        }
+      }
+      else {
+        file.AddLine(wxString::Format("  %ld, PC_%s, %ld,",
+              data->data[i], command_choices[command], data->data[i+2]));
+      }
+    }
 
     file.AddLine(wxT("};"));
 
