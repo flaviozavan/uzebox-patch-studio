@@ -20,7 +20,7 @@
 #include "filereader.h"
 #include "patchdata.h"
 #include "structdata.h"
-#include "uglyicon.xpm"
+#include "icons.h"
 
 #define MIN_CLIENT_HEIGHT 400
 
@@ -273,12 +273,12 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
   menuBar->Append(menuHelp, _("&Help"));
   SetMenuBar(menuBar);
 
-  wxToolBar *toolbar = CreateToolBar(wxTB_TEXT | wxTB_NOICONS);
-  toolbar->AddTool(ID_PLAY, _("Play"), wxNullBitmap);
-  toolbar->AddTool(ID_LOOP, _("Loop"), wxNullBitmap);
-  toolbar->AddTool(ID_STOP, _("Stop"), wxNullBitmap);
-  toolbar->AddTool(ID_STOP_ALL, _("Stop All"), wxNullBitmap);
-  toolbar->AddTool(ID_SYNC, _("Sync Loops"), wxNullBitmap);
+  wxToolBar *toolbar = CreateToolBar(wxTB_TEXT);
+  toolbar->AddTool(ID_PLAY, _("Play"), wxBitmap(play_xpm));
+  toolbar->AddTool(ID_LOOP, _("Loop"), wxBitmap(loop_xpm));
+  toolbar->AddTool(ID_STOP, _("Stop"), wxBitmap(stop_xpm));
+  toolbar->AddTool(ID_STOP_ALL, _("Stop All"), wxBitmap(stop_all_xpm));
+  toolbar->AddTool(ID_SYNC, _("Sync Loops"), wxBitmap(sync_xpm));
   toolbar->Realize();
 
   CreateStatusBar();

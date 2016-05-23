@@ -1,0 +1,6 @@
+#include "xpm/uglyicon.xpm"
+#include "xpm/play.xpm"
+#include "xpm/loop.xpm"
+#include "xpm/stop.xpm"
+#include "xpm/stop_all.xpm"
+#include "xpm/sync.xpm"
