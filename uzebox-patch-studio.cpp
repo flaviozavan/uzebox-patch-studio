@@ -783,7 +783,8 @@ void UPSFrame::on_save_as(wxCommandEvent &event) {
 
   wxFileDialog file_dialog(this, _("Save"), wxEmptyString,
       current_file_path.IsEmpty()? _("patches.inc") : current_file_path,
-      wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+      wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT
+      | wxFD_CHANGE_DIR);
 
   if (file_dialog.ShowModal() == wxID_CANCEL) {
     return;
@@ -1209,7 +1210,8 @@ void UPSFrame::on_export(wxCommandEvent &event) {
 
   wxFileDialog file_dialog(this, _("Export to WAVE"), wxEmptyString,
       wxString::Format(_("%s.wav"), data_tree->GetItemText(item)),
-      wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+      wxFileSelectorDefaultWildcardStr, wxFD_SAVE | wxFD_OVERWRITE_PROMPT
+      | wxFD_CHANGE_DIR);
 
   if (file_dialog.ShowModal() == wxID_CANCEL) {
     return;
