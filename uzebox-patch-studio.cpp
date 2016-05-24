@@ -348,8 +348,6 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
   patch_grid->SetColLabelValue(0, _("Delay"));
   patch_grid->SetColLabelValue(1, _("Command"));
   patch_grid->SetColLabelValue(2, _("Parameter"));
-  patch_grid->SetColFormatNumber(0);
-  patch_grid->SetColFormatNumber(2);
   patch_grid->DisableDragColSize();
   patch_grid->AutoSize();
   patch_grid->SetColSize(1, patch_grid->GetColSize(1)*2);
@@ -758,9 +756,8 @@ void UPSFrame::read_patch_data(const wxTreeItemId &item) {
 }
 
 void UPSFrame::update_patch_row_colors(int row) {
-  long param, delay;
-  patch_grid->GetCellValue(row, 0).ToLong(&delay);
-  patch_grid->GetCellValue(row, 2).ToLong(&param);
+  long delay = strtol(patch_grid->GetCellValue(row, 0), NULL, 0);
+  long param = strtol(patch_grid->GetCellValue(row, 2), NULL, 0);
 
   /* Delay color, always an unsigned integer */
   patch_grid->SetCellBackgroundColour(row, 0,
