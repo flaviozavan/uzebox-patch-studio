@@ -352,16 +352,37 @@ bool PatchData::generate_wave(wxVector<uint8_t> &out_data) {
               _("Command %lu: Invalid loop end jump"), i/3+1);
           return false;
         }
-        if (loop_count <= 0) {
+        else if (data[i+2] > (long) i/3) {
+          last_error = wxString::Format(
+              _("Command %lu: Loop end jump to negative command"), i/3+1);
+          return false;
+        }
+        if (!loop_count) {
           break;
         }
-        else if (data[i+2] > 0) {
-          i -= 3*(i+1);
-        }
         else {
-          do {
-            i -= 3;
-          } while(i >= 4 && data[i+1] != PC_LOOP_START);
+          size_t old_i = i;
+          loop_count--;
+          if (data[i+2] > 0) {
+            for (long to_return = data[i+2]+1; to_return--; i -= 3) {
+              if (data[i+1] == PC_LOOP_START) {
+                last_error = wxString::Format(_("Command %lu: Loop end jump "
+                      "to before a loop start causes infinite loop"),
+                    old_i/3+1);
+                return false;
+              }
+            }
+          }
+          else {
+            do {
+              i -= 3;
+            } while(i >= 3 && data[i+1] != PC_LOOP_START);
+            if (data[i+1] != PC_LOOP_START) {
+              last_error = wxString::Format(
+                  _("Command %lu: No previous loop start"), old_i/3+1);
+              return false;
+            }
+          }
         }
         break;
 
