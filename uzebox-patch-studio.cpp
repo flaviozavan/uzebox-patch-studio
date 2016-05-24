@@ -35,7 +35,7 @@ class UPSApp: public wxApp {
 class UPSFrame: public wxFrame {
   public:
     UPSFrame(const wxString &title, const wxPoint &pos, const wxSize &size);
-    void open_file(const wxString &path);
+    void open_file(const wxString &path, bool importing=false);
 
   private:
     void on_new(wxCommandEvent &event);
@@ -66,6 +66,7 @@ class UPSFrame: public wxFrame {
     void on_export(wxCommandEvent &event);
     void on_help_shortcuts(wxCommandEvent &event);
     void on_help_noise(wxCommandEvent &event);
+    void on_import(wxCommandEvent &event);
 
     bool validate_var_name(const wxString &name);
 
@@ -92,6 +93,8 @@ class UPSFrame: public wxFrame {
     void replace_patch_in_structs(const wxString &src, const wxString &dst);
     void update_layout();
     void sanitize_string(wxString &str);
+    void replace_patch_in_struct(const wxTreeItemId &item,
+        const wxString &src, const wxString &dst);
 
     wxRegEx valid_var_name;
     wxTreeItemId data_tree_root;
@@ -136,6 +139,7 @@ enum {
   ID_EXPORT,
   ID_HELP_SHORTCUTS,
   ID_HELP_NOISE,
+  ID_IMPORT,
 };
 
 wxBEGIN_EVENT_TABLE(UPSFrame, wxFrame)
@@ -167,6 +171,7 @@ wxBEGIN_EVENT_TABLE(UPSFrame, wxFrame)
   EVT_MENU(ID_EXPORT, UPSFrame::on_export)
   EVT_MENU(ID_HELP_SHORTCUTS, UPSFrame::on_help_shortcuts)
   EVT_MENU(ID_HELP_NOISE, UPSFrame::on_help_noise)
+  EVT_MENU(ID_IMPORT, UPSFrame::on_import)
 wxEND_EVENT_TABLE()
 wxIMPLEMENT_APP(UPSApp);
 
@@ -275,6 +280,7 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
   menuFile->Append(wxID_OPEN);
   menuFile->Append(wxID_SAVE);
   menuFile->Append(wxID_SAVEAS);
+  menuFile->Append(ID_IMPORT, _("&Import file\tCTRL+SHIFT+I"));
   menuFile->Append(ID_EXPORT, _("&Export to WAVE\tCTRL+SHIFT+E"));
   menuFile->AppendSeparator();
   menuFile->Append(wxID_EXIT);
@@ -392,6 +398,7 @@ UPSFrame::UPSFrame(const wxString &title, const wxPoint &pos,
     wxAcceleratorEntry(wxACCEL_CTRL, (int) 'D', ID_DELETE_COMMAND),
     wxAcceleratorEntry(wxACCEL_CTRL, (int) 'E', ID_NEW_COMMAND),
     wxAcceleratorEntry(wxACCEL_CTRL | wxACCEL_SHIFT, (int) 'E', ID_EXPORT),
+    wxAcceleratorEntry(wxACCEL_CTRL | wxACCEL_SHIFT, (int) 'I', ID_IMPORT),
   };
   SetAcceleratorTable(wxAcceleratorTable(
         sizeof(accelerator_entries)/sizeof(wxAcceleratorEntry),
@@ -899,7 +906,7 @@ void UPSFrame::on_open(wxCommandEvent &event) {
   open_file(file_dialog.GetPath());
 }
 
-void UPSFrame::open_file(const wxString &path) {
+void UPSFrame::open_file(const wxString &path, bool importing) {
   std::multimap<wxString, wxVector<long>> patches;
   std::multimap<wxString, wxVector<wxString>> structs;
   if (!FileReader::read_patches_and_structs(path, patches, structs)) {
@@ -907,33 +914,17 @@ void UPSFrame::open_file(const wxString &path) {
     return;
   }
 
-  /* Clean the data */
-  clear();
-
-  /* Add all the patches */
-  for (auto &p : patches) {
-    wxString name = get_next_data_name(p.first, true);
-    wxTreeItemId c = data_tree->AppendItem(data_tree_patches, name);
-    patch_names.insert(name);
-
-    PatchData *data = new PatchData();
-
-    for (size_t i = 0; i < p.second.size(); i += 3) {
-      /* Delay */
-      data->data.push_back(p.second[i]);
-      /* Command */
-      data->data.push_back(std::min(15l, (long) p.second[i+1]));
-      /* Parameter. PATCH_END might not have one */
-      data->data.push_back(data->data.back() == 15 && i+2 >= p.second.size()?
-          0 : p.second[i+2]);
-    }
-
-    data_tree->SetItemData(c, data);
+  if (!importing) {
+    /* Clean the data */
+    clear();
   }
+
   /* Add all the structs */
+  wxVector<wxTreeItemId> new_structs;
   for (auto &s : structs) {
     wxString name = get_next_data_name(s.first, true);
     wxTreeItemId c = data_tree->AppendItem(data_tree_structs, name);
+    new_structs.push_back(c);
 
     StructData *data = new StructData();
 
@@ -950,14 +941,44 @@ void UPSFrame::open_file(const wxString &path) {
     data_tree->SetItemData(c, data);
   }
 
+  /* Add all the patches */
+  for (auto &p : patches) {
+    wxString name = get_next_data_name(p.first, true);
+    wxTreeItemId c = data_tree->AppendItem(data_tree_patches, name);
+    patch_names.insert(name);
+
+    if (importing && p.first != name) {
+      for (auto &s : new_structs) {
+        replace_patch_in_struct(s, p.first, name);
+      }
+    }
+
+    PatchData *data = new PatchData();
+
+    for (size_t i = 0; i < p.second.size(); i += 3) {
+      /* Delay */
+      data->data.push_back(p.second[i]);
+      /* Command */
+      data->data.push_back(std::min(15l, (long) p.second[i+1]));
+      /* Parameter. PATCH_END might not have one */
+      data->data.push_back(data->data.back() == 15 && i+2 >= p.second.size()?
+          0 : p.second[i+2]);
+    }
+
+    data_tree->SetItemData(c, data);
+  }
+
   SetStatusText(wxString::Format(
         _("%s opened with %lu patches and %lu structs"),
         path, patches.size(), structs.size()));
 
   data_tree->ExpandAll();
-  current_file_path = path;
 
-  SetTitle(wxString::Format(_("Uzebox Patch Studio - %s"), current_file_path));
+  if (!importing) {
+    current_file_path = path;
+    SetTitle(wxString::Format(_("Uzebox Patch Studio - %s"),
+          current_file_path));
+  }
 }
 
 void UPSFrame::clear() {
@@ -1138,12 +1159,7 @@ void UPSFrame::replace_patch_in_structs(const wxString &src,
   wxTreeItemIdValue cookie;
   auto item = data_tree->GetFirstChild(data_tree_structs, cookie);
   while (item.IsOk()) {
-    auto data = (StructData *) data_tree->GetItemData(item);
-    for (size_t i = 0; i < data->data.size(); i += 5) {
-      if (data->data[i+2] == src) {
-        data->data[i+2] = dst;
-      }
-    }
+    replace_patch_in_struct(item, src, dst);
     item = data_tree->GetNextChild(data_tree_structs, cookie);
   }
 }
@@ -1269,4 +1285,27 @@ void UPSFrame::on_help_noise(wxCommandEvent &event) {
         "Patches are automatically played as noise "
         "when a NOISE_PARAM command is present."
         ), _("Noise Patches Help")).ShowModal();
+}
+
+void UPSFrame::on_import(wxCommandEvent &event) {
+  (void) event;
+
+  wxFileDialog file_dialog(this, _("Import"), wxEmptyString, wxEmptyString,
+      wxFileSelectorDefaultWildcardStr,
+      wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_CHANGE_DIR);
+
+  if (file_dialog.ShowModal() == wxID_CANCEL)
+    return;
+
+  open_file(file_dialog.GetPath(), true);
+}
+
+void UPSFrame::replace_patch_in_struct(const wxTreeItemId &item,
+    const wxString &src, const wxString &dst) {
+  auto data = (StructData *) data_tree->GetItemData(item);
+  for (size_t i = 0; i < data->data.size(); i += 5) {
+    if (data->data[i+2] == src) {
+      data->data[i+2] = dst;
+    }
+  }
 }
