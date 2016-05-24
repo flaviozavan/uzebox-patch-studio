@@ -1034,6 +1034,9 @@ void UPSFrame::on_stop_all(wxCommandEvent &event) {
     data_tree->SetItemBold(item, false);
     item = data_tree->GetNextChild(data_tree_patches, cookie);
   }
+
+  /* This causes non looping patches to stop */
+  Mix_HaltChannel(-1);
 }
 
 int UPSFrame::add_struct_command(const wxString &type, const wxString &pcm,
