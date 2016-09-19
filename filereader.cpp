@@ -53,9 +53,9 @@ const std::regex FileReader::singleline_comments("//.*");
 const std::regex FileReader::white_space("[\t\n\r]");
 const std::regex FileReader::extra_space(" +");
 const std::regex FileReader::patch_declaration(
-    "const char ([a-zA-Z_][a-zA-Z_0-9]*)\\[\\] PROGMEM ?= ?");
+    "const char ([a-zA-Z_][a-zA-Z_\\d]*)\\[\\] PROGMEM ?= ?");
 const std::regex FileReader::struct_declaration(
-    "const struct PatchStruct ([a-zA-Z_][a-zA-Z_0-9]*)\\[\\] PROGMEM ?= ?");
+    "const struct PatchStruct ([a-zA-Z_][a-zA-Z_\\d]*)\\[\\] PROGMEM ?= ?");
 
 long FileReader::string_to_long(const wxString &str) {
   if (defines.find(str) != defines.end())
