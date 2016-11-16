@@ -863,6 +863,7 @@ void UPSFrame::save_to_file(const wxString &path) {
     item = data_tree->GetNextChild(data_tree_patches, cookie);
   }
 
+  std::map<wxString, long unsigned> patch_defines;
   item = data_tree->GetFirstChild(data_tree_structs, cookie);
   while (item.IsOk()) {
     if (data_tree->IsSelected(item))
@@ -875,15 +876,22 @@ void UPSFrame::save_to_file(const wxString &path) {
     if (data->data.empty()) {
       file.AddLine(wxT("  {0, NULL, NULL, 0, 0},"));
     }
-    for (size_t i = 0; i < data->data.size(); i += 5)
+    for (size_t i = 0; i < data->data.size(); i += 5) {
       file.AddLine(wxString::Format("  {%ld, %s, %s, %s, %s},",
             choice_values.find(data->data[i])->second, data->data[i+1],
             data->data[i+2], data->data[i+3], data->data[i+4]));
+      if (patch_defines.find(data->data[i+2].Upper()) == patch_defines.end()) {
+        patch_defines.emplace(data->data[i+2].Upper(), patch_defines.size());
+      }
+    }
 
     file.AddLine(wxT("};"));
 
     item = data_tree->GetNextChild(data_tree_structs, cookie);
   }
+
+  for (auto &pd : patch_defines)
+    file.AddLine(wxString::Format("#define %s %lu", pd.first, pd.second));
 
   file.Write(wxTextFileType_Unix);
 
