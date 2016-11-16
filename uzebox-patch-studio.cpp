@@ -24,7 +24,7 @@
 #include "icons.h"
 
 #define MIN_CLIENT_HEIGHT 400
-#define VERSION_STRING "0.0.1"
+#define VERSION_STRING "0.0.2"
 
 class UPSApp: public wxApp {
   public:
