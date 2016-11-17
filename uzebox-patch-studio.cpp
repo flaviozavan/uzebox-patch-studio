@@ -881,7 +881,7 @@ void UPSFrame::save_to_file(const wxString &path) {
             choice_values.find(data->data[i])->second, data->data[i+1],
             data->data[i+2], data->data[i+3], data->data[i+4]));
       if (patch_defines.find(data->data[i+2].Upper()) == patch_defines.end()) {
-        patch_defines.emplace(data->data[i+2].Upper(), patch_defines.size());
+        patch_defines.emplace(data->data[i+2].Upper(), i/5);
       }
     }
 
