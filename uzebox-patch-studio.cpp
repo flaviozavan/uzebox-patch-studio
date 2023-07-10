@@ -576,9 +576,9 @@ int UPSFrame::add_patch_command(const wxString &delay, const wxString &command,
   }
   patch_grid->SetCellEditor(row_num, 1, new wxGridCellChoiceEditor(16,
         command_choices, false));
-  patch_grid->SetCellValue(delay, row_num, 0);
-  patch_grid->SetCellValue(command, row_num, 1);
-  patch_grid->SetCellValue(param, row_num, 2);
+  patch_grid->SetCellValue(row_num, 0, delay);
+  patch_grid->SetCellValue(row_num, 1, command);
+  patch_grid->SetCellValue(row_num, 2, param);
 
   update_patch_row_colors(row_num);
   patch_grid->deselect_cells();
@@ -1087,12 +1087,12 @@ int UPSFrame::add_struct_command(const wxString &type, const wxString &pcm,
         patch_names.size(),
         &(wxVector<wxString>(patch_names.begin(), patch_names.end()))[0],
         true));
-  struct_grid->SetCellValue(type, row_num, 0);
-  struct_grid->SetCellValue(pcm, row_num, 1);
-  struct_grid->SetCellValue(patch == wxEmptyString && patch_names.size()?
-      *(patch_names.begin()) : patch, row_num, 2);
-  struct_grid->SetCellValue(loop_start, row_num, 3);
-  struct_grid->SetCellValue(loop_end, row_num, 4);
+  struct_grid->SetCellValue(row_num, 0, type);
+  struct_grid->SetCellValue(row_num, 1, pcm);
+  struct_grid->SetCellValue(row_num, 2, patch == wxEmptyString && patch_names.size()?
+      *(patch_names.begin()) : patch);
+  struct_grid->SetCellValue(row_num, 3, loop_start);
+  struct_grid->SetCellValue(row_num, 4, loop_end);
 
   update_struct_row_colors(row_num);
   struct_grid->deselect_cells();
